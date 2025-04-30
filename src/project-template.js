@@ -1,13 +1,12 @@
-function createProject() {
-    const projFolder = document.querySelector("#projFolder");
+function renderProjectItem(currentProjectItem) {
+    const projFolder = document.querySelector("#projFolder")
+    const project = currentProjectItem;
+    const projectCard = document.createElement("div");
+    projectCard.classList.add("projectCard");
 
-    const project = document.createElement("div");
-    
-    project.style.width = "60%";
-    project.style.height = "60%";
-    project.style.backgroundColor = "pink";
+    projectCard.textContent = project.title;
 
-    projFolder.append(project);
+    projFolder.append(projectCard);
 }
 
-export {createProject};
+export {renderProjectItem}
