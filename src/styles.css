@@ -8,9 +8,19 @@ body {
     width: 100svw;
     height: 100svh;
     background-color: orange;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #projFolder {
-    width: 80%;
-    height: 70%;
+    width: 90%;
+    height: 90%;
+    border: 1px solid black;
+}
+
+.projectCard {
+    width: 200px;
+    height: 200px;
+    background-color: white;
 }
