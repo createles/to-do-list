@@ -40,7 +40,7 @@ body {
 .modal {
     width: 100svw;
     height: 100svh;
-    display: flex;
+    display: none;
     background-color: rgba(0, 0, 0, 0.6);
     position: fixed;
     left: 0;
@@ -48,10 +48,22 @@ body {
     z-index: 1;
     justify-content: center;
     align-items: center;
+    opacity: 0;
+    transform: scale(0.3);
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .modalContainer {
     width: 80%;
     height: 80%;
     background-color: white;
+}
+
+.isVisible {
+    display: flex;
+}
+
+.isFadedIn {
+    opacity: 1;
+    transform: scale(1);
 }
