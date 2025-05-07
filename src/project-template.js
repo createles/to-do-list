@@ -17,23 +17,17 @@ function createAddButton() {
     const addButton = document.createElement("button");
     addButton.classList.add("addButton");
     addButton.textContent = "+";
-    addButton.addEventListener("click", createModal);
+    addButton.addEventListener("click", showModal);
     return addButton;
 }
 
-function createModal() {
-    const modal = document.createElement("div");
-    modal.classList.add("modal");
-    const modalContainer = document.createElement("div");
-    modalContainer.classList.add("modalContainer");
-    const body = document.querySelector("body");
-    modal.append(modalContainer);
-    body.append(modal);
+function showModal() {
+    const modal = document.querySelector(".modal");
+    modal.classList.add("isVisible");
+    requestAnimationFrame(() => {
+        modal.classList.add("isFadedIn");
+    });
 }
-// function to view the note modal
-// function showModal() {
-//     const modal = document.
-// }
 
 function renderProjectItem(currentProjectItem) {
     const projFolder = document.querySelector("#projFolder")
@@ -46,4 +40,4 @@ function renderProjectItem(currentProjectItem) {
     projFolder.append(projectCard);
 }
 
-export {loadApp, renderProjectItem, createModal}
+export {loadApp, renderProjectItem, showModal}
