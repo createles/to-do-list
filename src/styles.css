@@ -41,6 +41,7 @@ body {
     width: 100svw;
     height: 100svh;
     display: none;
+    flex-direction: column;
     background-color: rgba(0, 0, 0, 0.6);
     position: fixed;
     left: 0;
@@ -54,9 +55,12 @@ body {
 }
 
 .modalContainer {
+    display: grid;
+    grid-template: 1fr 8fr / 1fr;
     width: 80%;
     height: 80%;
     background-color: white;
+    position: relative;
 }
 
 .isVisible {
@@ -66,4 +70,25 @@ body {
 .isFadedIn {
     opacity: 1;
     transform: scale(1);
+}
+
+.exitButton {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 30px;
+    height: 30px;
+    background-color: rgba(128, 128, 128, 0.50);
+    font-size: 1.5rem;
+    color: #333;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.exitButton:hover {
+    color: #000;
+    background-color: rgba(128, 128, 128, 0.70);
 }
