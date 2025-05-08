@@ -1,3 +1,5 @@
+import { showModal } from "./modal-ui";
+
 function loadApp() {
     const projFolder = document.querySelector("#projFolder")
 
@@ -19,14 +21,6 @@ function createAddButton() {
     addButton.textContent = "+";
     addButton.addEventListener("click", showModal);
     return addButton;
-}
-
-function showModal() {
-    const modal = document.querySelector(".modal");
-    modal.classList.add("isVisible");
-    requestAnimationFrame(() => {
-        modal.classList.add("isFadedIn");
-    });
 }
 
 function renderProjectItem(currentProjectItem) {
