@@ -8,7 +8,12 @@ function loadProjects() {
     if (storedProjects) {
         try {
             projects = JSON.parse(storedProjects);
-
+            // Backwards compatibility check for old projects intialized without tasks array
+            projects.forEach(project => {
+                if (!project.tasks) {
+                    project.tasks = [];
+                }
+            })
             // maxId = accumulator, p = project. 
             // Math.max chooses the bigger number between maxId and p.id;
             // maxId starts with -1, and compares it to the first available objects id,
@@ -26,7 +31,8 @@ function loadProjects() {
 function newProject(title = "New Project") { // set default value for title if missing
     const newProject = {
         id: currentProjId++, // post increment operator; set id to current value, then increment the variable in one move
-        title: title
+        title: title,
+        tasks: []
     };
 
     projects.push(newProject);
@@ -42,14 +48,20 @@ function saveProjects() {
 
 // Passes the projects array to index.js
 function getAllProjects() {
-    return [...projects]; // returns a shallow copy of the projects array to the main index.js
+    return projects.map(project => ({
+        ...project,
+        tasks: [...project.tasks]        
+    })); // returns a shallow copy of the projects and their tasks array
 }
 
 // implement a function to SELECT a proj for project-template to use
 function selectProjectById(projectId) {
     const project = projects.find(p => p.id === projectId);
-    return project ? {...project} : null; // once again, return a new object that is a shallow copy of the project object
+    if (project) {
+        return {...project, tasks: [...project.tasks]};
+    }
     // return null if not found
+    return null; 
 }
 
 function removeProject(projectId) {
@@ -57,4 +69,23 @@ function removeProject(projectId) {
     saveProjects();
 }
 
-export {loadProjects, newProject, getAllProjects, selectProjectById, removeProject};
+function updateProject(projectId, updates) {
+    const projectIndex = projects.findIndex(p => p.id === projectId);
+
+    // if the project doesn't exist
+    if (projectIndex === -1) {
+        console.error(`Project with ID ${projectId} was not found.`);
+        return false;
+    }
+
+    // get project at projectIndex and
+    // replace it with a new object
+    // new object first copies all key/values of original object
+    // then overwrites those values with any changes in the update object
+    projects[projectIndex] = { ...projects[projectIndex], ...updates};    
+
+    saveProjects();
+    return true; // for successs indication
+}
+
+export {loadProjects, newProject, getAllProjects, selectProjectById, removeProject, updateProject};
