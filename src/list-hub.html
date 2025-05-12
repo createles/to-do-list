@@ -9,10 +9,13 @@
     <div class="modal">
         <div class="modalContainer">
             <button class="exitButton">X</button>
-            <div id="modalContentArea">
-                <input type="text" id="modalTitlInput" class="titleInput" placeholder="Title">
-                <div id="modalTaskArea" class="taskArea">
-                    <input type="text" class="taskInput" placeholder="What needs doing?">
+            <div class="modalContentArea">
+                <input type="text" class="titleInput" placeholder="Title">
+                <div class="taskArea">
+                    <div class="taskInputRow">
+                        <input type="checkbox" class="taskCheckBoxNew" aria-label="Mark task complete">
+                        <input type="text" class="taskTextInputNew" placeholder="What needs doing?">
+                    </div>
                 </div>
             </div>
         </div>
