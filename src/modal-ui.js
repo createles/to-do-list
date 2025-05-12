@@ -1,12 +1,26 @@
-import { newProject } from "./project-data";
+import { newProject, updateProject } from "./project-data";
 
 const modal = document.querySelector(".modal");
+const modalContentArea = document.querySelector(".modalContentArea");
 const exitButton = modal ? modal.querySelector(".exitButton") : null;
 const titleInput = document.querySelector(".titleInput");
 const taskInput = document.querySelector(".taskInput");
 
 let currentProjIdForModal = null; // initialize to null on open
 
+function renderNewProjectModal() {
+    if (!modalContentArea) return;
+    currentProjIdForModal = null;
+    modalContentArea.innerHTML = `
+                <input type="text" id="modalTitlInput" class="titleInput" placeholder="Title">
+                <div id="modalTaskArea" class="taskArea">
+                    <input type="text" class="taskInput" placeholder="What needs doing?">
+                </div>
+    `;
+
+}
+
+// function to make modal visible
 function showModal() {
     modal.classList.add("isVisible");
     requestAnimationFrame(() => {
@@ -22,10 +36,15 @@ if (titleInput) {
             // new project is created and saved to localStorage
             const createdProject = newProject(currentTitle);
             if (createdProject) {
-                currentProjIdForModal = createdProject.id; // set this open "session-window" to the projects id
+                currentProjIdForModal = createdProject.id; // set this open "session-window" to the project's id
             }
         } else {
-            // existing project and is being updated
+            const projectIdToUpdate = currentProjIdForModal;
+            const newTitle = titleInput.value;
+
+            const updatedTitle = {
+                title: newTitle
+            }
         }
     }
 
