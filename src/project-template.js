@@ -1,4 +1,4 @@
-import { showModal } from "./modal-ui";
+import { showModal, openModalForNewProj } from "./modal-ui";
 
 function loadApp() {
     const projFolder = document.querySelector("#projFolder")
@@ -19,7 +19,7 @@ function createAddButton() {
     const addButton = document.createElement("button");
     addButton.classList.add("addButton");
     addButton.textContent = "+";
-    addButton.addEventListener("click", showModal);
+    addButton.addEventListener("click", openModalForNewProj);
     return addButton;
 }
 
@@ -34,4 +34,4 @@ function renderProjectItem(currentProjectItem) {
     projFolder.append(projectCard);
 }
 
-export {loadApp, renderProjectItem, showModal}
+export {loadApp, renderProjectItem}
