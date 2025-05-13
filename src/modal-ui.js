@@ -68,7 +68,7 @@ function addTaskInputRow(containerElement) {
     const taskRowHtml = `
                     <div class="taskInputRow">
                         <input type="checkbox" class="taskCheckBoxNew" aria-label="Mark task complete">
-                        <input type="text" class="taskTextInputNew" placeholder="What needs doing?">
+                        <input type="text" class="taskTextInputNew" placeholder="add task...">
                     </div>
     `;
 
@@ -87,7 +87,7 @@ function openModalForNewProj() {
     const newProjectHtml = `
                 <input type="text" class="titleInput" placeholder="Title">
                 <div class="taskArea">
-                    <h4>Tasks:</h4>
+                    <h4>To-do:</h4>
                 </div>`;
 
     // set base elements for setting up new project (inputs)
