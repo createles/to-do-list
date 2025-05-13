@@ -88,4 +88,39 @@ function updateProject(projectId, updates) {
     return true; // for successs indication
 }
 
-export {loadProjects, newProject, getAllProjects, selectProjectById, removeProject, updateProject};
+// **MODIFY DEBUGGING FUNCTION**
+function logAllProjects() {
+    console.log("--- Current Projects in Memory ---");
+
+    if (!projects || projects.length === 0) {
+        const rawLocalStorage = localStorage.getItem('projects');
+        if (rawLocalStorage && rawLocalStorage !== "[]") {
+            console.log("The 'projects' array in memory is empty, but localStorage seems to have data.");
+            console.log("Did loadProjects() run on app initialization?");
+            console.log("Raw localStorage content:", rawLocalStorage);
+        } else {
+            console.log("No projects found in memory (and localStorage might be empty or uninitialized).");
+        }
+        console.log("--- End of Log ---");
+        return;
+    }
+
+    console.log(`Found ${projects.length} project(s):`);
+    // console.table() provides a nice tabular format for arrays of objects
+    console.table(projects.map(p => ({...p}))); // Logging a shallow copy of each project for clarity
+
+    // For a more detailed, expandable view of each project, you can also do:
+    /*
+    projects.forEach((project, index) => {
+        console.log(`Project ${index + 1} (ID: ${project.id}):`, JSON.parse(JSON.stringify(project)));
+    });
+    */
+    console.log("--- End of Log ---");
+}
+
+// debugging purposes
+if (typeof window !== 'undefined') {
+    window.dev_logAllProjects = logAllProjects;
+}
+
+export {loadProjects, newProject, getAllProjects, selectProjectById, removeProject, updateProject, logAllProjects};
