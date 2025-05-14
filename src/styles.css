@@ -37,6 +37,10 @@ body {
     background-color: white;
 }
 
+.projectCardTaskRow {
+    display: flex;
+}
+
 .modal {
     width: 100svw;
     height: 100svh;
