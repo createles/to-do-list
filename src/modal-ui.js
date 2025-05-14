@@ -1,4 +1,5 @@
 import { newProject, updateProject } from "./project-data";
+import { renderAllProjectCards } from "./project-template";
 
 const modal = document.querySelector(".modal");
 const modalContentArea = modal ? modal.querySelector(".modalContentArea") : null;
@@ -57,7 +58,10 @@ function hideModal() {
 
 // if exitButton exists, attach listener for hiding the modal
 if (exitButton) {
-    exitButton.addEventListener("click", hideModal);
+    exitButton.addEventListener("click", () => {
+        hideModal();
+        renderAllProjectCards();
+    });
 } else if (modal) {
     console.warn("Modal exit button not found.");
 }
