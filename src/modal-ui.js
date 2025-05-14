@@ -180,6 +180,30 @@ function openModalForNewProj() {
             }
         });
 
+        // blur doesn't bubble up the DOM so focusout is used
+        taskAreaContainer.addEventListener('focusout', (event) => {
+            // check if blur was fired from a task text input 
+            if (event.target.classList.contains("taskTextInputNew")) {
+                const blurredTaskInput = event.target;
+
+                if (blurredTaskInput.value.trim() !== "") {
+                    console.log("Task input blurred:", blurredTaskInput.value);
+
+                    const titleInput = modalContentArea.querySelector(".titleInput");
+                    const currentTitle = titleInput ? titleInput.value.trim() : "";
+
+                    const allTaskInputs = taskAreaContainer.querySelectorAll(".taskTextInputNew");
+                    // creates a shallow copied version of the array of the objects in allTaskInputs
+                    const allTaskStrings = Array.from(allTaskInputs)
+                    .map(input => input.value.trim())
+                    .filter(Boolean); // filters out empty task strings
+
+                    console.log(`Updating project ${currentProjIdForModal} with title: "${currentTitle}" and tasks:`, allTaskStrings)
+                    updateProject(currentProjIdForModal, { title: currentTitle, tasks: allTaskStrings });
+                }
+            }
+        });
+        
         taskAreaContainer.addEventListener("keydown", (event) => {
             if (event.target.classList.contains("taskTextInputNew") && event.key === "Enter") {
                 event.preventDefault();
