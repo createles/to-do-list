@@ -1,5 +1,5 @@
 import { showModal, openModalForNewProj } from "./modal-ui";
-import { getAllProjects } from "./project-data";
+import { getAllProjects, removeProject } from "./project-data";
 
 const addButtonHome = document.querySelector(".addButtonHome");
 
@@ -7,12 +7,23 @@ function loadApp() {
     renderAllProjectCards(); 
 }
 
+// creates generic button to add more projects
 function createAddButton() {
     const addButton = document.createElement("button");
     addButton.classList.add("addButton");
     addButton.textContent = "+";
     addButton.addEventListener("click", openModalForNewProj);
     return addButton;
+}
+
+// creates the centerButton for adding first project
+function createCenterButton() {
+    const centerButton = createAddButton();
+    centerButton.id = "centerButton";
+    const caption = document.createElement("p");
+    caption.textContent = "Add your first to-do-note!"
+    centerButton.insertBefore(caption, centerButton.firstChild);
+    return centerButton;
 }
 
 function renderAllProjectCards() {
@@ -35,11 +46,7 @@ function renderAllProjectCards() {
         const addButton = createAddButton();
         projFolder.appendChild(addButton);
     } else {
-        const centerButton = createAddButton();
-        centerButton.id = "centerButton";
-        const caption = document.createElement("p");
-        caption.textContent = "Add your first to-do-note!"
-        centerButton.insertBefore(caption, centerButton.firstChild);
+        const centerButton = createCenterButton();
         projFolder.append(centerButton);
     }
 }
@@ -107,10 +114,42 @@ function renderProjectCard(projItem) {
         taskList.append(noTasksMessage);
     }
     
+    // create trash button
+    const trashButton = document.createElement("button");
+    trashButton.classList.add("trashButton");
+    trashButton.innerHTML = "&#128465;";
 
-    projectCard.append(cardTitle, taskList);
+    // add event listener to delete project card on click
+    trashButton.addEventListener("click", () => {
+        // add confirm dialog option
+        if (confirm(`Are you sure you want to delete the project "${projTitle}"?`)) {
+            projectCard.remove();
+            // delete from storage
+            removeProject(projId);
+
+            console.log(`Project "${projTitle}" (ID: ${projId}) has been deleted.`);
+
+            // if projFolder is now empty, display centerButton
+            const allProjects = getAllProjects();
+            if (allProjects.length === 0) {
+                projFolder.innerHTML = '';
+                const centerButton = createCenterButton();
+                projFolder.append(centerButton);
+            }
+        }
+    })
+
+    projectCard.append(cardTitle, taskList, trashButton);
     projFolder.append(projectCard);
 }
+
+// function selectProjectCard(projectId) {
+//     const selected = `[data-project-id="${projectId}]`;
+// }
+
+// function removeProjectCard(projectId) {
+//     const projToDelete = `[data-project-id="${projectId}]`;
+// }
 
 if (addButtonHome) {
     addButtonHome.addEventListener("click", () => {

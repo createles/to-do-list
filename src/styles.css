@@ -52,9 +52,18 @@ body {
     width: auto;
     height: 200px;
     background-color: white;
+    position: relative;
 }
 
 .projectCardTaskRow {
+    display: flex;
+}
+
+.trashButton {
+    position: absolute;
+    right: 20px;
+    bottom: 10px;
+    background-color: rgba(255, 0, 0, 0.548);
     display: flex;
 }
 
