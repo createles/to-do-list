@@ -109,12 +109,6 @@ function logAllProjects() {
     // console.table() provides a nice tabular format for arrays of objects
     console.table(projects.map(p => ({...p}))); // Logging a shallow copy of each project for clarity
 
-    // For a more detailed, expandable view of each project, you can also do:
-    /*
-    projects.forEach((project, index) => {
-        console.log(`Project ${index + 1} (ID: ${project.id}):`, JSON.parse(JSON.stringify(project)));
-    });
-    */
     console.log("--- End of Log ---");
 }
 
