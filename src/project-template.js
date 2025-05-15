@@ -1,6 +1,7 @@
 import { showModal, openModalForNewProj } from "./modal-ui";
 import { getAllProjects } from "./project-data";
 
+const addButtonHome = document.querySelector(".addButtonHome");
 
 function loadApp() {
     renderAllProjectCards(); 
@@ -31,6 +32,8 @@ function renderAllProjectCards() {
         allProjects.forEach(projItem => {
             renderProjectCard(projItem);
         });
+        const addButton = createAddButton();
+        projFolder.appendChild(addButton);
     } else {
         const centerButton = createAddButton();
         centerButton.id = "centerButton";
@@ -107,6 +110,30 @@ function renderProjectCard(projItem) {
 
     projectCard.append(cardTitle, taskList);
     projFolder.append(projectCard);
+}
+
+if (addButtonHome) {
+    addButtonHome.addEventListener("click", () => {
+        addButtonHome.classList.remove("isVisible");
+        openModalForNewProj();
+    });
+
+    document.addEventListener('modalHasOpened', () => {
+        console.log("modalHasOpened event received.");
+        if (addButtonHome) {
+            addButtonHome.classList.remove("isVisible");
+        }
+    })
+
+    document.addEventListener('modalHasClosed', () => {
+        console.log("modalHasClosed event received.");
+        if (addButtonHome) {
+            addButtonHome.classList.add("isVisible");
+        }
+    });
+
+} else {
+    console.error("Add project button not found in the DOM.");
 }
 
 export {loadApp, renderProjectCard, renderAllProjectCards}
