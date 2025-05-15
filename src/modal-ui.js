@@ -4,6 +4,7 @@ import { renderAllProjectCards } from "./project-template";
 const modal = document.querySelector(".modal");
 const modalContentArea = modal ? modal.querySelector(".modalContentArea") : null;
 const exitButton = modal ? modal.querySelector(".exitButton") : null;
+const modalBackground = modal ? modal.querySelector(".modalBackground") : null;
 
 let currentProjIdForModal = null; // initialize to null on open
 
@@ -38,6 +39,15 @@ function hideModal() {
 
     modal.classList.remove("isFadedIn"); // Trigger fade-out animation
 
+    // Custom-event to signal modal closure
+    const modalClosedEvent = new CustomEvent('modalHasClosed', {
+        bubbles: true, // So the event bubbles up the DOM Tree
+        composed: true // allows event to cross DOM boundaries
+    });
+
+    modal.dispatchEvent(modalClosedEvent);
+    console.log("modalHasClosed event dispatched.")
+
     const handleAnimationEnd = () => {
         modal.classList.remove("isVisible");
 
@@ -48,7 +58,7 @@ function hideModal() {
 
         currentProjIdForModal = null; // reset project id to null
         modal.removeEventListener("transitionend", handleAnimationEnd); // Remove event-listener
-    }
+    };
 
     // Re-add event listener when transition (fade out) finishes
     modal.addEventListener("transitionend", handleAnimationEnd, { once: true })
@@ -56,7 +66,7 @@ function hideModal() {
 
 
 
-// if exitButton exists, attach listener for hiding the modal
+// if exitButton exists, attach listener for hiding the modal and saving the project details
 if (exitButton) {
     exitButton.addEventListener("click", () => {
         hideModal();
@@ -64,6 +74,16 @@ if (exitButton) {
     });
 } else if (modal) {
     console.warn("Modal exit button not found.");
+}
+
+// if you click outside the modal area (like the background), hideModal and save the project
+if (modalBackground) {
+    modalBackground.addEventListener("click", () => {
+        hideModal();
+        renderAllProjectCards();
+    })
+} else {
+    console.error("Modal not visible.");
 }
 
 function addTaskInputRow(containerElement) {
@@ -82,6 +102,15 @@ function addTaskInputRow(containerElement) {
 function openModalForNewProj() {
     console.log("Setting up modal for a NEW project...");
     currentProjIdForModal = null; // reset state of modal to set up new project
+
+    // Custom-event to signal modal opening
+    const modalOpenedEvent = new CustomEvent('modalHasOpened', {
+        bubbles: true, // So the event bubbles up the DOM Tree
+        composed: true // allows event to cross DOM boundaries
+    });
+
+    modal.dispatchEvent(modalOpenedEvent);
+    console.log("modalHasOpened event dispatched.")
 
     if (!modalContentArea) {
         console.error("Cannot open modal: Modal Content Area doesnt exist!");
