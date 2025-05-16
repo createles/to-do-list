@@ -3,28 +3,61 @@ let currentProjId = 0; // initialize id number of projects
 
 function loadProjects() {
     const storedProjects = localStorage.getItem('projects');
+    console.log("Loading projects...");
 
     // if storedProjects exists
     if (storedProjects) {
         try {
-            projects = JSON.parse(storedProjects);
-            // Backwards compatibility check for old projects intialized without tasks array
-            projects.forEach(project => {
-                if (!project.tasks) {
-                    project.tasks = [];
-                }
-            })
-            // maxId = accumulator, p = project. 
-            // Math.max chooses the bigger number between maxId and p.id;
-            // maxId starts with -1, and compares it to the first available objects id,
-            // which is always greater than -1. After running the reduce method on every item,
-            // returns the final value of maxId and sets currentProjId to that number
-            currentProjId = projects.reduce((maxId, p) => Math.max(maxId, p.id), -1) + 1;
+            let parsedProjects = JSON.parse(storedProjects);
+            console.log("Parsed from local storage:", parsedProjects);
+
+            // Iterate over projects and ensure task structure and defaults
+            projects = parsedProjects.map(project => {
+
+                // Backwards compatibility check for old projects intialized without tasks array
+                const tasksArray = (project.tasks && Array.isArray(project.tasks))
+                    ? project.tasks : []; // if project.tasks exists and is an array, return it
+
+                // NORMALIZES each task to be an object with the required fields
+                // catches any errors in saving task objects to ensure absolute formatting
+                const normalizedTasks = tasksArray.map((tasks, index) => {
+                    if (typeof task === "object" && tasks !== null) {
+                        return {
+                            id: task.id || `task_${project.id || 'proj'}_${index}_${Date.now()}`, // Robust measures to secure task ID
+                            text: task.text || "", // Empty string if no text included
+                            completed: typeof task.completed === "boolean" ? task.completed : false, // Default to false
+                            priority: typeof task.priority === "number" ? task.priority : 0, // Default priority set to 0
+                            dueDate: task.dueDate || null // Defaults to null
+                        };
+                    }
+                });
+
+                return { ...project, tasks: normalizedTasks };
+            });
+
+            console.log("Projects after normalization:", projects);
+
+            if (projects.length > 0) {
+                const maxId = projects.reduce((currentMax, p) => {
+                    const pId = (typeof p.id === "number" && !isNaN(p.id)) ? p.id : -1;
+                    return Math.max(currentMax, pId);
+                }, -1);
+                currentProjId = maxId >= 0 ? maxId + 1 : 0;
+            } else {
+                currentProjId = 0;
+            }
+            console.log("currentProjId set to:", currentProjId);
+
         } catch (e) {
             console.error("Could not parse projects from localStorage", e);
             projects = [];
             currentProjId = 0;
         }
+    } else {
+        // No 'projects' key in localStorage (e.g., first-time use)
+        console.log("No projects found in localStorage. Initializing empty.");
+        projects = [];
+        currentProjId = 0;
     }
 }
 
