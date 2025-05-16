@@ -128,6 +128,43 @@ body {
     position: relative;
 }
 
+.taskInputRow {
+    display: flex;
+}
+
+.prioritySelector {
+    display: flex; 
+    gap: 8px;
+    align-items: center;
+}
+
+.priorityCircle {
+    width: 24px;   
+    height: 24px;
+    border-radius: 50%; 
+    border: 2px solid #ccc;
+    background-color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease; 
+    box-sizing: border-box; 
+}
+
+.priorityCircle:hover,
+.priorityCircle:focus {
+    border-color: #888;
+    outline: none; 
+}
+
+.priorityCircle.isFilled {
+    background-color: #555; 
+    border-color: #555;
+}
+
+/* Example: Different colors for different priority fills */
+/* .priority-circle.is-filled[data-priority-value="1"] { background-color: green; border-color: green; } */
+/* .priority-circle.is-filled[data-priority-value="2"] { background-color: orange; border-color: orange; } */
+/* .priority-circle.is-filled[data-priority-value="3"] { background-color: red; border-color: red; } */
+
 .isVisible {
     display: flex;
 }

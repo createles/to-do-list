@@ -86,17 +86,93 @@ if (modalBackground) {
     console.error("Modal not visible.");
 }
 
+function initializeExistingPrioritySelector(selectorElement, initialPriority = 0, onChangeCallback) {
+    if (!selectorElement) {
+        console.error("Priority selector element not provided for initialization");
+        return;
+    }
+
+    const circles = selectorElement.querySelectorAll(".priorityCircle");
+    
+    // Updates visual state of the circles
+    const updateVisualState = (newSelectedPriority) => {
+        circles.forEach(circle => {
+            const circleValue = parseInt(circle.dataset.priorityValue, 10);
+            if (circleValue <= newSelectedPriority) {
+                circle.classList.add("isFilled");
+                circle.setAttribute("aria-checked", "true");
+            } else {
+                circle.classList.remove("isFilled");
+                circle.setAttribute("aria-checked", "false");
+            }
+        });
+    };
+
+    // Set initial state
+    updateVisualState(initialPriority);
+
+    // Adds listener to container to observe circle clicks
+    const handleInteraction = (targetElement) => {
+        if (targetElement && targetElement.classList.contains("priorityCircle")) {
+            const newPriority = parseInt(targetElement.dataset.priorityValue, 10);
+            updateVisualState(newPriority); // Update the visual state to reflect proper level
+
+            if (typeof onChangeCallback === "function") {
+                onChangeCallback(newPriority); // Notify about changes made
+            }
+        }
+    };
+
+    selectorElement.addEventListener("click", (event) => {
+        handleInteraction(event.target);
+    });
+
+    selectorElement.addEventListener("keydown", (event) => {
+        if (event.target.classList.contains("priorityCircle") && (event.key === "Enter" || event.key === " ")) {
+            event.preventDefault();
+            handleInteraction(event.target);
+        }
+    });
+
+    // Updating selector witout interacting with the element (data changes observed)
+    selectorElement.updateDisplay = (newPriority) => {
+        updateVisualState(newPriority);
+    };
+}
+
 function addTaskInputRow(containerElement) {
     if (!containerElement) return;
 
+    // format for a new task row
     const taskRowHtml = `
                     <div class="taskInputRow">
                         <input type="checkbox" class="taskCheckBoxNew" aria-label="Mark task complete">
                         <input type="text" class="taskTextInputNew" placeholder="add task...">
+                        <div class="prioritySelector" aria-label="Task priority">
+                            <span class="priorityCircle" data-priority-value="1" role="button" tabindex="0" aria-label="Set priority to 1: Low"></span>
+                            <span class="priorityCircle" data-priority-value="2" role="button" tabindex="0" aria-label="Set priority to 2: Medium"></span>
+                            <span class="priorityCircle" data-priority-value="3" role="button" tabindex="0" aria-label="Set priority to 3: High"></span>
+                        </div>
                     </div>
     `;
 
+    // inserts a new task row set into the modal task area
     containerElement.insertAdjacentHTML('beforeend', taskRowHtml);
+
+    // select the new task row,
+    const newRowElement = containerElement.querySelector(".taskInputRow:last-child");
+    if (newRowElement) {
+        const prioritySelectorElement = newRowElement.querySelector(".prioritySelector");
+        if (prioritySelectorElement) {
+            // set event listeners and initial priority state for the entire task row
+            initializeExistingPrioritySelector(prioritySelectorElement, 0, (newPriority) => {
+                console.log(`Priority for a task in a new row was set to: ${newPriority}`);
+                // sets the dataset property of the ENTIRE ROW (the task item) to have selectedPriority
+                // which will TEMPORARILY STORE the priority for use when item is blurred or the enter button is pressed
+                newRowElement.dataset.selectedPriority = newPriority;
+            })
+        }
+    }
 }
 
 function openModalForNewProj() {
