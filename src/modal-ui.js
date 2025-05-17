@@ -145,7 +145,7 @@ function addTaskInputRow(containerElement) {
 
     // format for a new task row
     const taskRowHtml = `
-                    <div class="taskInputRow">
+                    <div class="taskInputRow" data-task-id="" data-completed="false" data-priority="0" data-due-date="">
                         <input type="checkbox" class="taskCheckBoxNew" aria-label="Mark task complete">
                         <input type="text" class="taskTextInputNew" placeholder="add task...">
                         <div class="prioritySelector" aria-label="Task priority">
@@ -153,6 +153,8 @@ function addTaskInputRow(containerElement) {
                             <span class="priorityCircle" data-priority-value="2" role="button" tabindex="0" aria-label="Set priority to 2: Medium"></span>
                             <span class="priorityCircle" data-priority-value="3" role="button" tabindex="0" aria-label="Set priority to 3: High"></span>
                         </div>
+                        <input type="date" class"taskDueDateInput" aria-label="Task due date">
+                        <button class="taskDelete">x</button>
                     </div>
     `;
 
@@ -170,6 +172,22 @@ function addTaskInputRow(containerElement) {
                 // sets the dataset property of the ENTIRE ROW (the task item) to have selectedPriority
                 // which will TEMPORARILY STORE the priority for use when item is blurred or the enter button is pressed
                 newRowElement.dataset.selectedPriority = newPriority;
+            })
+        }
+
+        // set event listener for checked status
+        const newCheckBox = newRowElement.querySelector(".taskCheckBoxNew");
+        if (newCheckBox) {
+            newCheckBox.addEventListener("change", (event) => {
+                newRowElement.dataset.completed = event.target.checked;
+            });
+        }
+
+        // set event listener for value changes for DATE input
+        const newDueDateInput = newRowElement.querySelector(".taskDueDateInput");
+        if (newDueDateInput) {
+            newDueDateInput.addEventListener("change", (event) => {
+                newRowElement.dataset.dueDate = event.target.value; // date stored in "YYYY-MM-DD" or "" format
             })
         }
     }
