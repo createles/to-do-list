@@ -1,4 +1,4 @@
-import { newProject, updateProject } from "./project-data";
+import { newProject, updateProject, selectProjectById } from "./project-data";
 import { renderAllProjectCards } from "./project-template";
 
 const modal = document.querySelector(".modal");
@@ -93,7 +93,7 @@ function initializeExistingPrioritySelector(selectorElement, initialPriority = 0
     }
 
     const circles = selectorElement.querySelectorAll(".priorityCircle");
-    
+
     // Updates visual state of the circles
     const updateVisualState = (newSelectedPriority) => {
         circles.forEach(circle => {
@@ -171,7 +171,7 @@ function addTaskInputRow(containerElement) {
                 console.log(`Priority for a task in a new row was set to: ${newPriority}`);
                 // sets the dataset property of the ENTIRE ROW (the task item) to have selectedPriority
                 // which will TEMPORARILY STORE the priority for use when item is blurred or the enter button is pressed
-                newRowElement.dataset.selectedPriority = newPriority;
+                newRowElement.dataset.priority = newPriority;
             })
         }
 
@@ -190,6 +190,154 @@ function addTaskInputRow(containerElement) {
                 newRowElement.dataset.dueDate = event.target.value; // date stored in "YYYY-MM-DD" or "" format
             })
         }
+
+        // set event listener to delete taskInputRow with delete button
+        // update the project to remove the selected task
+        const deleteButton = newRowElement.querySelector(".taskDelete");
+        if (deleteButton) {
+            deleteButton.addEventListener("click", () => {
+                newRowElement.remove();
+                console.log("Task deleted from UI.");
+
+                // If project has already been created and saved; need to update project
+                if (currentProjIdForModal !== null) {
+
+                    if (!containerElement) {
+                        console.log("Could not find task area container to re-collect and update tasks.");
+                        return;
+                    }
+
+                    const taskObjects = [];
+                    const remainingTaskRowElements = containerElement.querySelectorAll(".taskInputRow");
+
+                    remainingTaskRowElements.forEach((rowEl, index) => {
+                        const textInput = rowEl.querySelector(".taskTextInputNew");
+                        const taskText = textInput ? textInput.value.trim() : "";
+
+                        if (taskText) { // Only include tasks that have text
+                            const isCompleted = rowEl.dataset.completed === 'true';
+                            // Ensure you are reading the correct dataset attribute for priority
+                            const priority = parseInt(rowEl.dataset.priority || rowEl.dataset.selectedPriority, 10) || 0;
+                            const dueDateValue = rowEl.dataset.dueDate;
+
+                            taskObjects.push({
+                                // retain taskId for retained tasks
+                                id: rowEl.dataset.taskId || `task_${currentProjIdForModal}_temp_${index}_${Date.now()}`, // Temporary ID if old one isn't set on row
+                                text: taskText,
+                                completed: isCompleted,
+                                priority: priority,
+                                dueDate: dueDateValue || null
+                            });
+                        }
+                    });
+                    console.log(`Updating project ${currentProjIdForModal} after task deletion. New task list:`, taskObjects);
+                    // Now call updateProject with the newly formed list of tasks
+                    updateProject(currentProjIdForModal, { tasks: taskObjects });
+                } else {
+                    // If currentProjIdForModal is null, the project hasn't been created yet.
+                    // Simply removing the row from the DOM is enough.
+                    // The main save (handleSaveNewProject) will later collect tasks from remaining rows.
+                    console.log("Task row removed from UI before initial project save. Data will be correct on save.");
+                }
+            });
+        }
+    }
+}
+
+function gatherAndSaveModalData() {
+    if (!modalContentArea) {
+        console.error("Modal content area not found. Cannot save.");
+        return false;
+    }
+
+    // Get project title
+    const titleElement = modalContentArea.querySelector(".titleText") || // Used in openModalForExistingProject
+                              modalContentArea.querySelector(".titleInput");      // Used in openModalForNewProj
+
+    // if no title, display warning
+    if (!titleElement) {
+        console.warn("No title element found in modal.")
+    }
+
+    const currentProjectTitle = titleElement ? titleElement.value.trim() : "";
+
+    // Collect Task Objects from all .taskInputRow elements
+    const taskObjects = [];
+    const taskRowElements = modalContentArea.querySelectorAll(".taskInputRow");
+
+    taskRowElements.forEach((rowEl, index) => {
+        // Query for task text input (could be .taskTextInputNew or .taskTextInputExisting)
+        const textInput = rowEl.querySelector(".taskTextInputNew") || rowEl.querySelector(".taskTextInputExisting");
+        const taskText = textInput ? textInput.value.trim() : "";
+
+        if (taskText) { // Only process rows that have task text
+            const checkbox = rowEl.querySelector(".taskCheckBoxNew") || rowEl.querySelector(".taskCheckBoxExisting");
+            // If the checkbox itself is the source of truth for 'completed' when saving:
+            const isCompleted = checkbox ? checkbox.checked : (rowEl.dataset.completed === 'true');
+
+            // Priority and Due Date are read from dataset attributes,
+            // which should be updated by their respective UI components' event listeners.
+            const priority = parseInt(rowEl.dataset.priority || rowEl.dataset.selectedPriority, 10) || 0; // Handle both dataset names for now
+            const dueDateValue = rowEl.dataset.dueDate;
+
+            const existingTaskId = rowEl.dataset.taskId; // Will be present for tasks loaded for an existing project, or after first save for new tasks
+
+            taskObjects.push({
+                id: existingTaskId || `task_new_${Date.now()}_${index}`, // Use existing ID, or generate a new one for truly new tasks
+                text: taskText,
+                completed: isCompleted,
+                priority: priority,
+                dueDate: dueDateValue || null // Ensure empty string from date input becomes null
+            });
+        }
+    });
+    console.log("Gathered task objects for save/update:", JSON.stringify(taskObjects, null, 2));
+
+    // Save/Update Logic
+    if (currentProjIdForModal === null) { // CREATING A NEW PROJECT
+        // Only create if there's a title or at least one task
+        if (!currentProjectTitle && taskObjects.length === 0) {
+            console.log("New project: Empty title and no tasks. Not creating.");
+            return false;
+        }
+        const effectiveTitle = currentProjectTitle || "Untitled";
+        const createdProject = newProject(effectiveTitle); // from project-data.js
+
+        if (createdProject && createdProject.id !== undefined) {
+            currentProjIdForModal = createdProject.id; // CRITICAL: Update module-level ID for this session
+            
+            // Update the newly created tasks with the final project ID in their task IDs
+            // And update data-task-id on the DOM rows for consistency if they are edited again in this session
+            const finalTaskObjects = taskObjects.map((task, index) => {
+                const newTaskId = task.id.startsWith("task_new_") ? `task_${currentProjIdForModal}_${index}_${Date.now()}` : task.id;
+                if (taskRowElements[index]) { // Make sure the row element still exists
+                    taskRowElements[index].dataset.taskId = newTaskId; // Set persistent ID on the DOM row
+                }
+                return { ...task, id: newTaskId };
+            });
+
+            updateProject(currentProjIdForModal, { tasks: finalTaskObjects });
+            console.log(`New project ${currentProjIdForModal} ('${effectiveTitle}') created and tasks updated.`);
+            return true;
+        } else {
+            console.error("Failed to create new project shell.");
+            return false;
+        }
+    } else { // UPDATING AN EXISTING PROJECT
+        console.log(`Updating project ID: ${currentProjIdForModal} ('${currentProjectTitle}')`);
+        // For existing projects, ensure new tasks added get a proper ID structure
+        const finalTaskObjectsForUpdate = taskObjects.map((task, idx) => {
+             if (task.id.startsWith("task_new_")) { // Task was newly added to this existing project
+                const newTaskId = `task_${currentProjIdForModal}_${idx}_${Date.now()}`;
+                 if (taskRowElements[idx]) {
+                    taskRowElements[idx].dataset.taskId = newTaskId;
+                }
+                return { ...task, id: newTaskId };
+             }
+             return task; // Existing tasks should already have their persistent IDs
+        });
+        updateProject(currentProjIdForModal, { title: currentProjectTitle, tasks: finalTaskObjectsForUpdate });
+        return true;
     }
 }
 
@@ -233,49 +381,12 @@ function openModalForNewProj() {
 
     if (titleInput) {
         // callback function for when exiting the title input element
-        const handleTitleSave = () => {
-            // .trim() just removes any leading and trailing whitespace from the string
-            const currentTitle = titleInput.value.trim();
-            console.log(`Title blurred; Title: "${currentTitle}", Current ID: ${currentProjIdForModal}`); // logging purposes
-
-            // Collating all Tasks and their values
-            const taskInputs = taskAreaContainer.querySelectorAll(".taskTextInputNew");
-            // For now, we only save the text, ignoring checkbox state for new projects
-            const tasks = Array.from(taskInputs)
-                .map(input => input.value.trim())
-                .filter(Boolean); // keep the NON-EMPTY task strings
-
-            // prevents project creation on empty title and project not initialized
-            if (!currentTitle && currentProjIdForModal === null) {
-                console.log("No title input detected. Project not saved.");
-                return;
-            }
-
-            // if title exists but no project ID, create a new project
-            if (currentProjIdForModal === null || currentProjIdForModal === undefined) {
-                // new project is created and saved to localStorage
-                console.log("Attempting to create a new project...");
-                const createdProject = newProject(currentTitle); // from project-data.js
-                if (createdProject && createdProject.id !== undefined) {
-                    currentProjIdForModal = createdProject.id; // set this open "session-window" to the project's id
-                    console.log(`New project has successfully been created. Project ID: ${currentProjIdForModal}`);
-                    // If tasks exists, update the newly created project
-                    if (tasks.length > 0) {
-                        console.log(`Updating new project with project ID: ${currentProjIdForModal} with tasks:`, tasks);
-                        updateProject(currentProjIdForModal, { tasks: tasks });
-                    }
-                } else {
-                    console.log("Failed to create a new project.");
-                }
-            } else {
-                // Update existing project
-                console.log(`Updating project ID: ${currentProjIdForModal}. Title: "${currentTitle}", Tasks:`, tasks)
-                updateProject(currentProjIdForModal, { title: currentTitle, tasks: tasks });
-            }
+        const titleSaveHandler = () => {
+            gatherAndSaveModalData();
         };
 
         // calls title save to NEW PROJECT or EXISTING PROJECT
-        titleInput.addEventListener("blur", debounce(handleTitleSave, 300));
+        titleInput.addEventListener("blur", debounce(titleSaveHandler, 300));
         titleInput.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
                 event.preventDefault();
@@ -303,30 +414,31 @@ function openModalForNewProj() {
             }
         });
 
-        // blur doesn't bubble up the DOM so focusout is used
-        taskAreaContainer.addEventListener('focusout', (event) => {
-            // check if blur was fired from a task text input 
-            if (event.target.classList.contains("taskTextInputNew")) {
-                const blurredTaskInput = event.target;
+        // **OLD**
+        // // blur doesn't bubble up the DOM so focusout is used
+        // taskAreaContainer.addEventListener('focusout', (event) => {
+        //     // check if blur was fired from a task text input 
+        //     if (event.target.classList.contains("taskTextInputNew")) {
+        //         const blurredTaskInput = event.target;
 
-                if (blurredTaskInput.value.trim() !== "") {
-                    console.log("Task input blurred:", blurredTaskInput.value);
+        //         if (blurredTaskInput.value.trim() !== "") {
+        //             console.log("Task input blurred:", blurredTaskInput.value);
 
-                    const titleInput = modalContentArea.querySelector(".titleInput");
-                    const currentTitle = titleInput ? titleInput.value.trim() : "";
+        //             const titleInput = modalContentArea.querySelector(".titleInput");
+        //             const currentTitle = titleInput ? titleInput.value.trim() : "";
 
-                    const allTaskInputs = taskAreaContainer.querySelectorAll(".taskTextInputNew");
-                    // creates a shallow copied version of the array of the objects in allTaskInputs
-                    const allTaskStrings = Array.from(allTaskInputs)
-                    .map(input => input.value.trim())
-                    .filter(Boolean); // filters out empty task strings
+        //             const allTaskInputs = taskAreaContainer.querySelectorAll(".taskTextInputNew");
+        //             // creates a shallow copied version of the array of the objects in allTaskInputs
+        //             const allTaskStrings = Array.from(allTaskInputs)
+        //                 .map(input => input.value.trim())
+        //                 .filter(Boolean); // filters out empty task strings
 
-                    console.log(`Updating project ${currentProjIdForModal} with title: "${currentTitle}" and tasks:`, allTaskStrings)
-                    updateProject(currentProjIdForModal, { title: currentTitle, tasks: allTaskStrings });
-                }
-            }
-        });
-        
+        //             console.log(`Updating project ${currentProjIdForModal} with title: "${currentTitle}" and tasks:`, allTaskStrings)
+        //             updateProject(currentProjIdForModal, { title: currentTitle, tasks: allTaskStrings });
+        //         }
+        //     }
+        // });
+
         taskAreaContainer.addEventListener("keydown", (event) => {
             if (event.target.classList.contains("taskTextInputNew") && event.key === "Enter") {
                 event.preventDefault();
@@ -356,4 +468,270 @@ function openModalForNewProj() {
     showModal();
 }
 
-export { showModal, openModalForNewProj };
+function openModalForExistingProject(projectId) {
+    const project = selectProjectById(projectId);
+
+    if (!project) {
+        console.error(`Project with ID ${projectId} not found.`);
+        return;
+    }
+
+    currentProjIdForModal = projectId;
+    console.log(`Opening modal for existing project: ${project.title} (ID: ${projectId})`);
+
+    if (!modalContentArea) {
+        console.error("Modal Content Area not found!");
+        return;
+    }
+
+    // Display project title (as a p) and tasks area
+    const existingProjectHtml = `
+        <p class="titleText">${project.title}</p>
+                <div class="taskArea">
+                    <h4>To-do:</h4>
+                </div>
+    `;
+
+    let existingTasksHtml = "";
+
+    if (project.tasks && project.tasks.length > 0) {
+        project.tasks.forEach(task => {
+            // For each task object, create its HTML row
+            // Note: data-task-id is crucial here
+            existingTasksHtml += `
+                <div class="taskInputRow existingTaskRow" data-task-id="${task.id}">
+                        <input type="checkbox" class="taskCheckBoxExisting" ${task.completed ? 'checked' : ''} aria-label="Mark task complete">
+                        <input type="text" class="taskTextInputExisting" value="${task.text}" placeholder="add task...">
+                        <div class="prioritySelector existingPrioritySelector" aria-label="Task priority">
+                            <span class="priorityCircle" data-priority-value="1" role="radio" tabindex="0" aria-label="Set priority to 1: Low"></span>
+                            <span class="priorityCircle" data-priority-value="2" role="radio" tabindex="0" aria-label="Set priority to 2: Medium"></span>
+                            <span class="priorityCircle" data-priority-value="3" role="radio" tabindex="0" aria-label="Set priority to 3: High"></span>
+                        <input type="date" class="taskDueDateInputExisting" value="${task.dueDate || ''}" aria-label="Task due date">
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        existingTasksHtml += `<div class="taskInputRow" data-task-id="" data-completed="false" data-priority="0" data-due-date="">
+                        <input type="checkbox" class="taskCheckBoxNew" aria-label="Mark task complete">
+                        <input type="text" class="taskTextInputNew" placeholder="add task...">
+                        <div class="prioritySelector" aria-label="Task priority">
+                            <span class="priorityCircle" data-priority-value="1" role="button" tabindex="0" aria-label="Set priority to 1: Low"></span>
+                            <span class="priorityCircle" data-priority-value="2" role="button" tabindex="0" aria-label="Set priority to 2: Medium"></span>
+                            <span class="priorityCircle" data-priority-value="3" role="button" tabindex="0" aria-label="Set priority to 3: High"></span>
+                        </div>
+                        <input type="date" class="taskDueDateInput" aria-label="Task due date">
+                        <button class="taskDelete">x</button>
+                    </div>
+    `
+    };
+
+    modalContentArea.innerHTML = existingProjectHtml + existingTasksHtml;
+
+    // Initializing priority, completed, and date states for each task row
+    const existingTaskRows = modalContentArea.querySelectorAll(".existingTaskRow");
+    existingTaskRows.forEach(rowElement => {
+        const taskId = rowElement.dataset.taskId;
+        const taskData = project.tasks.find(t => t.id === taskId); // Get the specific task data
+
+        // Display exisiting priorty
+        if (taskData) {
+            const prioritySelectorDiv = rowElement.querySelector(".existingPrioritySelector");
+            if (prioritySelectorDiv) {
+                initializeExistingPrioritySelector(prioritySelectorDiv, taskData.priority, (newPriority) => {
+                    console.log(`Priority for task ID ${taskId} changed to ${newPriority}`);
+                    // Find task in project.tasks, update its priority, then call updateProject
+                    const taskToUpdate = project.tasks.find(t => t.id === taskId);
+                    if (taskToUpdate) {
+                        taskToUpdate.priority = newPriority;
+                        updateProject(currentProjIdForModal, { tasks: project.tasks });
+                    }
+                });
+            }
+
+            // Attach eventListners for the current task rows checkbox, textInput, and date
+            // These listeners will find the task by taskId, update it, and call updateProject
+            const checkbox = rowElement.querySelector('.taskCheckBoxExisting');
+            if (checkbox) {
+                checkbox.addEventListener('change', (event) => {
+                    const taskToUpdate = project.tasks.find(t => t.id === taskId);
+                    if (taskToUpdate) {
+                        taskToUpdate.completed = event.target.checked;
+                        updateProject(currentProjIdForModal, { tasks: project.tasks });
+                    }
+                });
+            }
+
+            const textInput = rowElement.querySelector('.taskTextInputExisting');
+            if (textInput) {
+                textInput.addEventListener('blur', debounce(() => { // Use debounce
+                    const taskToUpdate = project.tasks.find(t => t.id === taskId);
+                    if (taskToUpdate && taskToUpdate.text !== textInput.value.trim()) {
+                        taskToUpdate.text = textInput.value.trim();
+                        updateProject(currentProjIdForModal, { tasks: project.tasks });
+                    }
+                }, 300));
+            }
+
+            const dueDateInput = rowElement.querySelector('.taskDueDateInputExisting');
+            if (dueDateInput) {
+                dueDateInput.addEventListener('change', (event) => {
+                     const taskToUpdate = project.tasks.find(t => t.id === taskId);
+                     if (taskToUpdate) {
+                         taskToUpdate.dueDate = event.target.value || null;
+                         updateProject(currentProjIdForModal, { tasks: project.tasks });
+                     }
+                });
+            }
+
+            // set event listener to delete taskInputRow with delete button
+            // update the project to remove the selected task
+            const deleteButton = rowElement.querySelector(".taskDelete");
+            if (deleteButton) {
+                deleteButton.addEventListener("click", () => {
+                    newRowElement.remove();
+                    console.log("Task deleted from UI.");
+
+                    // If project has already been created and saved; need to update project
+                    if (currentProjIdForModal !== null) {
+
+                        if (!containerElement) {
+                            console.log("Could not find task area container to re-collect and update tasks.");
+                            return;
+                        }
+
+                        const taskObjects = [];
+                        const remainingTaskRowElements = containerElement.querySelectorAll(".taskInputRow");
+
+                        remainingTaskRowElements.forEach((rowEl, index) => {
+                            const textInput = rowEl.querySelector(".taskTextInputNew");
+                            const taskText = textInput ? textInput.value.trim() : "";
+
+                            if (taskText) { // Only include tasks that have text
+                                const isCompleted = rowEl.dataset.completed === 'true';
+                                // Ensure you are reading the correct dataset attribute for priority
+                                const priority = parseInt(rowEl.dataset.priority || rowEl.dataset.selectedPriority, 10) || 0;
+                                const dueDateValue = rowEl.dataset.dueDate;
+
+                                taskObjects.push({
+                                    // retain taskId for retained tasks
+                                    id: rowEl.dataset.taskId || `task_${currentProjIdForModal}_temp_${index}_${Date.now()}`, // Temporary ID if old one isn't set on row
+                                    text: taskText,
+                                    completed: isCompleted,
+                                    priority: priority,
+                                    dueDate: dueDateValue || null
+                                });
+                            }
+                        });
+                        console.log(`Updating project ${currentProjIdForModal} after task deletion. New task list:`, taskObjects);
+                        // Now call updateProject with the newly formed list of tasks
+                        updateProject(currentProjIdForModal, { tasks: taskObjects });
+                    } else {
+                        // If currentProjIdForModal is null, the project hasn't been created yet.
+                        // Simply removing the row from the DOM is enough.
+                        // The main save (handleSaveNewProject) will later collect tasks from remaining rows.
+                        console.log("Task row removed from UI before initial project save. Data will be correct on save.");
+                    }
+                });
+            }
+        }
+    });
+
+    // Add listener for the main project title input
+    const projectTitleInput = modalContentArea.querySelector(".titleInput");
+    if (projectTitleInput) {
+        projectTitleInput.addEventListener('blur', debounce(() => {
+            if (project.title !== projectTitleInput.value.trim()) {
+                project.title = projectTitleInput.value.trim(); // Update local copy
+                updateProject(currentProjIdForModal, { title: project.title }); // Save only title
+            }
+        }, 300));
+    }
+
+    // add listener for p if title already exists
+    const projectTitleP = modalContentArea.querySelector(".titleText");
+    if (projectTitleP) {
+
+        // Re-usable edit on-click function
+        const makeTitleEditableOnClick = (pElement) => {
+            pElement.addEventListener("click", function handleClickToEdit() {
+                // Store the original title text
+                const originalTitle = pElement.textContent;
+
+                // Create the new input element
+                const titleEditInput = document.createElement('input');
+                titleEditInput.type = 'text';
+                titleEditInput.className = 'titleInput'; // Use a consistent class
+                titleEditInput.value = originalTitle;   // Pre-fill with current title
+                titleEditInput.placeholder = 'Title';
+
+                // Replace the <p> element with the new <input> element
+                if (pElement.parentNode) {
+                    pElement.parentNode.replaceChild(titleEditInput, pElement);
+                } else {
+                    // Fallback if pElement somehow lost its parent (shouldn't happen here)
+                    console.error("Could not replace title paragraph, parent not found.");
+                    return;
+                }
+
+                // Automatically focus the new input field
+                titleEditInput.focus();
+                // Select the text in the input for easier editing
+                titleEditInput.select();
+
+                // unction to revert back to <p> and save (if changed)
+                const saveAndRevertToP = () => {
+                    const newTitle = titleEditInput.value.trim();
+
+                    // Create the new <p> element to display the title
+                    const newP = document.createElement('p');
+                    newP.className = 'titleText'; // Re-apply original class
+                    newP.textContent = newTitle || originalTitle; // Use new title, or original if new is empty
+
+                    // Replace the input with the new <p>
+                    if (titleEditInput.parentNode) {
+                        titleEditInput.parentNode.replaceChild(newP, titleEditInput);
+                    }
+
+                    // Save the changes if the title actually changed
+                    if (newTitle && newTitle !== originalTitle) {
+                        console.log(`Title changed from "${originalTitle}" to "${newTitle}"`);
+                        project.title = newTitle; // Update the local project object
+                        // Call your updateProject function from project-data.js
+                        updateProject(currentProjIdForModal, { title: newTitle });
+                    }
+
+                    // Make the new <p> element editable again
+                    makeTitleEditableOnClick(newP);
+                };
+
+                // 5. Add event listeners to the input to save and revert
+                titleEditInput.addEventListener('blur', saveAndRevertToP);
+
+                titleEditInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault(); 
+                        titleEditInput.blur();    // Trigger blur to save and revert
+                    } else if (event.key === 'Escape') {
+                        // Revert to original title without saving changes
+                        const originalP = document.createElement('p');
+                        originalP.className = 'titleText';
+                        originalP.textContent = originalTitle;
+                        if (titleEditInput.parentNode) {
+                            titleEditInput.parentNode.replaceChild(originalP, titleEditInput);
+                        }
+                        makeTitleEditableOnClick(originalP); // Make it editable again
+                    }
+                });
+            }, { once: true }); // { once: true } ensures the listener is removed after first click,
+            // preventing issues if not handled carefully inside.
+            // The makeTitleEditableOnClick re-adds it to the new <p>.
+        };
+
+        // Initial call to make the title paragraph editable
+        makeTitleEditableOnClick(projectTitleP);
+    }
+
+    showModal();
+}
+export { showModal, openModalForNewProj, openModalForExistingProject };
