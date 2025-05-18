@@ -1,4 +1,4 @@
-import { showModal, openModalForNewProj } from "./modal-ui";
+import { showModal, openModalForNewProj, openModalForExistingProject } from "./modal-ui";
 import { getAllProjects, removeProject } from "./project-data";
 
 const addButtonHome = document.querySelector(".addButtonHome");
@@ -113,14 +113,15 @@ function renderProjectCard(projItem) {
         noTasksMessage.textContent = "No current tasks available."
         taskList.append(noTasksMessage);
     }
-    
+
     // create trash button
     const trashButton = document.createElement("button");
     trashButton.classList.add("trashButton");
     trashButton.innerHTML = "&#128465;";
 
     // add event listener to delete project card on click
-    trashButton.addEventListener("click", () => {
+    trashButton.addEventListener("click", (event) => {
+        event.stopPropagation(); // Prevent click from bubbling up to projectCard
         // add confirm dialog option
         if (confirm(`Are you sure you want to delete the project "${projTitle}"?`)) {
             projectCard.remove();
@@ -129,27 +130,17 @@ function renderProjectCard(projItem) {
 
             console.log(`Project "${projTitle}" (ID: ${projId}) has been deleted.`);
 
-            // if projFolder is now empty, display centerButton
-            const allProjects = getAllProjects();
-            if (allProjects.length === 0) {
-                projFolder.innerHTML = '';
-                const centerButton = createCenterButton();
-                projFolder.append(centerButton);
-            }
+            renderAllProjectCards(); // refresh projFolder
         }
-    })
+    });
+
+    projectCard.addEventListener("click", () => {
+        openModalForExistingProject(projId);
+    });
 
     projectCard.append(cardTitle, taskList, trashButton);
     projFolder.append(projectCard);
 }
-
-// function selectProjectCard(projectId) {
-//     const selected = `[data-project-id="${projectId}]`;
-// }
-
-// function removeProjectCard(projectId) {
-//     const projToDelete = `[data-project-id="${projectId}]`;
-// }
 
 if (addButtonHome) {
     addButtonHome.addEventListener("click", () => {
