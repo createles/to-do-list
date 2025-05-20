@@ -20,12 +20,12 @@ function loadProjects() {
 
                 // NORMALIZES each task to be an object with the required fields
                 // catches any errors in saving task objects to ensure absolute formatting
-                const normalizedTasks = tasksArray.map((tasks, index) => {
-                    if (typeof task === "object" && tasks !== null) {
+                const normalizedTasks = tasksArray.map((task, index) => {
+                    if (typeof task === "object" && task !== null) {
                         return {
                             id: task.id || `task_${project.id || 'proj'}_${index}_${Date.now()}`, // Robust measures to secure task ID
                             text: task.text || "", // Empty string if no text included
-                            completed: typeof task.completed === "boolean" ? task.completed : false, // Default to false
+                            completed: typeof task.completed === "boolean" ? task.completed : false, // Default to false, also false if value is not a boolean
                             priority: typeof task.priority === "number" ? task.priority : 0, // Default priority set to 0
                             dueDate: task.dueDate || null // Defaults to null
                         };
@@ -39,6 +39,7 @@ function loadProjects() {
 
             if (projects.length > 0) {
                 const maxId = projects.reduce((currentMax, p) => {
+                    // pId represents currentValue; the current highest id in storage, if it doesn't exist, then no projects initiated and start with -1
                     const pId = (typeof p.id === "number" && !isNaN(p.id)) ? p.id : -1;
                     return Math.max(currentMax, pId);
                 }, -1);
@@ -55,7 +56,7 @@ function loadProjects() {
         }
     } else {
         // No 'projects' key in localStorage (e.g., first-time use)
-        console.log("No projects found in localStorage. Initializing empty.");
+        console.log("No projects found in localStorage. Initializing empty projects array.");
         projects = [];
         currentProjId = 0;
     }
@@ -87,7 +88,7 @@ function getAllProjects() {
     })); // returns a shallow copy of the projects and their tasks array
 }
 
-// implement a function to SELECT a proj for project-template to use
+// Selects and returns a project to be displayed/updated/deleted
 function selectProjectById(projectId) {
     const project = projects.find(p => p.id === projectId);
     if (project) {
