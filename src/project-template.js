@@ -80,8 +80,8 @@ function renderProjectCard(projItem) {
     taskList.classList.add("projectCardTaskList");
 
     // if tasks exist, create task items
-    if (tasks.length > 0) {
-        tasks.forEach((taskText, index) => {
+    if (tasks && tasks.length > 0) {
+        tasks.forEach((task, index) => {
             const projCardTaskRow = document.createElement("div");
             projCardTaskRow.classList.add("projectCardTaskRow");
 
@@ -89,13 +89,18 @@ function renderProjectCard(projItem) {
             checkBox.type = "checkbox";
             checkBox.classList.add("projectCardCheckbox");
             checkBox.id = `${projId}-task-${index}`; // assign id per task
-
-            // TODO: If tasks become objects with a 'completed' status, set checkBox.checked here.
-            // For now, they will all be unchecked by default as tasks are strings.
+            checkBox.checked = task.completed;
 
             const taskContent = document.createElement("p");
             taskContent.classList.add("projectCardTaskContent");
-            taskContent.textContent = taskText;
+            taskContent.textContent = task.text;
+
+            // applies strike-through styling to task upon completion
+            if (task.completed) {
+                taskContent.classList.add("completed");
+            } else {
+                taskContent.classList.remove("completed");
+            }
 
             // create label and wrap tasks in a label to associate with checkbox
             const taskLabel = document.createElement("label");

@@ -88,6 +88,11 @@ body {
     display: flex;
 }
 
+.projectCardTaskContent.completed {
+    text-decoration: line-through;
+    color: #777;
+}
+
 .trashButton {
     position: absolute;
     right: 20px;
