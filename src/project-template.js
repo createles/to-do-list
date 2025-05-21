@@ -39,6 +39,7 @@ function renderAllProjectCards() {
     // get all projects
     const allProjects = getAllProjects();
 
+    // displays all projects onto the DOM
     if (allProjects && allProjects.length > 0) {
         allProjects.forEach(projItem => {
             renderProjectCard(projItem);
@@ -122,6 +123,12 @@ function renderProjectCard(projItem) {
                 }
             })
 
+            // stops the click event from bubbling up and triggering
+            // the openModal behavior on projCard
+            checkBox.addEventListener("click", (event) => {
+                event.stopPropagation();
+            })
+
             const taskContent = document.createElement("p");
             taskContent.classList.add("projectCardTaskContent");
             taskContent.textContent = task.text;
@@ -156,7 +163,7 @@ function renderProjectCard(projItem) {
         // adds incompleted tasks first, then completed tasks
         taskList.appendChild(incompleteTasksFragment);
         taskList.appendChild(completedTasksFragment);
-        
+
     } else { // If no tasks are found, display message
         const noTasksMessage = document.createElement("p");
         noTasksMessage.classList.add("noTasksMessage");
@@ -184,6 +191,7 @@ function renderProjectCard(projItem) {
         }
     });
 
+    // Open modal for the project card on click
     projectCard.addEventListener("click", () => {
         openModalForExistingProject(projId);
     });
@@ -193,11 +201,16 @@ function renderProjectCard(projItem) {
 }
 
 if (addButtonHome) {
+
+    // hides home add button on click and
+    // opens a new modal to create a project
     addButtonHome.addEventListener("click", () => {
         addButtonHome.classList.remove("isVisible");
         openModalForNewProj();
     });
 
+    // listens in for modalHasOpened custom event to hide the button
+    // when modal is opened some other way (existing proj card was clicked)
     document.addEventListener('modalHasOpened', () => {
         console.log("modalHasOpened event received.");
         if (addButtonHome) {
@@ -205,6 +218,7 @@ if (addButtonHome) {
         }
     })
 
+    // makes button visible again when modal closes
     document.addEventListener('modalHasClosed', () => {
         console.log("modalHasClosed event received.");
         if (addButtonHome) {
