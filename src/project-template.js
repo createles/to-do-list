@@ -1,5 +1,5 @@
 import { showModal, openModalForNewProj, openModalForExistingProject } from "./modal-ui";
-import { getAllProjects, removeProject } from "./project-data";
+import { getAllProjects, removeProject, selectProjectById, updateProject } from "./project-data";
 
 const addButtonHome = document.querySelector(".addButtonHome");
 
@@ -79,6 +79,11 @@ function renderProjectCard(projItem) {
     const taskList = document.createElement("div");
     taskList.classList.add("projectCardTaskList");
 
+    // Groups tasks according to their completion status to handle ordering
+    // in the taskList container
+    const incompleteTasksFragment = document.createDocumentFragment();
+    const completedTasksFragment = document.createDocumentFragment();
+
     // if tasks exist, create task items
     if (tasks && tasks.length > 0) {
         tasks.forEach((task, index) => {
@@ -91,16 +96,35 @@ function renderProjectCard(projItem) {
             checkBox.id = `${projId}-task-${index}`; // assign id per task
             checkBox.checked = task.completed;
 
+            // Updates the project-data to reflect change in checked status
+            checkBox.addEventListener("change", (event) => {
+                event.stopPropagation();
+
+                // this sets the checked state by checking the checked property of the checkBox
+                const currentCheckedState = event.target.checked;
+                const currentTaskId = task.id; 
+                const currentProjId = projId;
+
+                console.log(`Task ${currentTaskId} in project ${currentProjId} completion status: ${currentCheckedState}`);
+
+                const projectToUpdate = selectProjectById(currentProjId); // selects the proj to update
+                if (projectToUpdate) {
+                    const taskToUpdate = projectToUpdate.tasks.find(t => t.id === currentTaskId);
+                    if (taskToUpdate) {
+                        taskToUpdate.completed = currentCheckedState;
+                        updateProject(currentProjId, { tasks: projectToUpdate.tasks })
+                        renderAllProjectCards();
+                    } else {
+                        console.error("Task to update not found in the project's task folder.")
+                    }
+                } else {
+                    console.error("Project to update not found in projects folder.");
+                }
+            })
+
             const taskContent = document.createElement("p");
             taskContent.classList.add("projectCardTaskContent");
             taskContent.textContent = task.text;
-
-            // applies strike-through styling to task upon completion
-            if (task.completed) {
-                taskContent.classList.add("completed");
-            } else {
-                taskContent.classList.remove("completed");
-            }
 
             // create label and wrap tasks in a label to associate with checkbox
             const taskLabel = document.createElement("label");
@@ -109,9 +133,30 @@ function renderProjectCard(projItem) {
             // insert <p> into label
             taskLabel.append(taskContent);
 
+            // applies strike-through styling to task upon completion
+            if (task.completed) {
+                taskContent.classList.add("completed");
+            } else {
+                taskContent.classList.remove("completed");
+            }
+
+            // Append the checkbox and label "p" to the taskRow to build the task item
             projCardTaskRow.append(checkBox, taskLabel);
-            taskList.append(projCardTaskRow);
+
+            // Handle ordering the tasks based on completion
+            if (task.completed) {
+                completedTasksFragment.appendChild(projCardTaskRow);
+            } else {
+                incompleteTasksFragment.appendChild(projCardTaskRow);
+            }
+
         });
+
+        // appends the taskRows AFTER looping through all tasks
+        // adds incompleted tasks first, then completed tasks
+        taskList.appendChild(incompleteTasksFragment);
+        taskList.appendChild(completedTasksFragment);
+        
     } else { // If no tasks are found, display message
         const noTasksMessage = document.createElement("p");
         noTasksMessage.classList.add("noTasksMessage");
