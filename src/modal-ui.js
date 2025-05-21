@@ -39,7 +39,8 @@ function hideModal() {
 
     modal.classList.remove("isFadedIn"); // Trigger fade-out animation
 
-    // Custom-event to signal modal closure
+    // Custom-event to signal modal closure for use in
+    // displaying the addHomeButton in project-template
     const modalClosedEvent = new CustomEvent('modalHasClosed', {
         bubbles: true, // So the event bubbles up the DOM Tree
         composed: true // allows event to cross DOM boundaries
@@ -73,7 +74,7 @@ if (exitButton) {
         renderAllProjectCards();
     });
 } else if (modal) {
-    console.warn("Modal exit button not found.");
+    console.warn("Modal not found.");
 }
 
 // if you click outside the modal area (like the background), hideModal and save the project
@@ -86,21 +87,27 @@ if (modalBackground) {
     console.error("Modal not visible.");
 }
 
+// Sets the initial priority for a task
 function initializeExistingPrioritySelector(selectorElement, initialPriority = 0, onChangeCallback) {
+    // selectorElement -> prioritySelector container for task
     if (!selectorElement) {
-        console.error("Priority selector element not provided for initialization");
+        console.error("Priority selector element not provided for initialization.");
         return;
     }
 
+    // get a list of nodes of the circle elements
     const circles = selectorElement.querySelectorAll(".priorityCircle");
 
     // Updates visual state of the circles
     const updateVisualState = (newSelectedPriority) => {
         circles.forEach(circle => {
             const circleValue = parseInt(circle.dataset.priorityValue, 10);
+            // if the priority value of the circle is less than the priority value of the task,
+            // shade the circle
             if (circleValue <= newSelectedPriority) {
                 circle.classList.add("isFilled");
                 circle.setAttribute("aria-checked", "true");
+            // if it is higher than set priority, unshade it
             } else {
                 circle.classList.remove("isFilled");
                 circle.setAttribute("aria-checked", "false");
@@ -108,12 +115,14 @@ function initializeExistingPrioritySelector(selectorElement, initialPriority = 0
         });
     };
 
-    // Set initial state
+    // Set initial state (if none, set to 0)
     updateVisualState(initialPriority);
 
     // Adds listener to container to observe circle clicks
     const handleInteraction = (targetElement) => {
         if (targetElement && targetElement.classList.contains("priorityCircle")) {
+            // takes the priority value and updates the visual state
+            // (fills the appropriate number of circles)
             const newPriority = parseInt(targetElement.dataset.priorityValue, 10);
             updateVisualState(newPriority); // Update the visual state to reflect proper level
 
@@ -124,22 +133,33 @@ function initializeExistingPrioritySelector(selectorElement, initialPriority = 0
     };
 
     selectorElement.addEventListener("click", (event) => {
+        // when any of the circles are clicked,
+        // handleInteraction:
+        // 1. takes the priority value of the circle
+        // 2. updates the visual state of the priority circles
         handleInteraction(event.target);
     });
 
     selectorElement.addEventListener("keydown", (event) => {
+        // when any of the circles are focused,
+        // and enter key is pressed -> handleInteraction:
+        // 1. takes the priority value of the circle
+        // 2. updates the visual state of the priority circles
         if (event.target.classList.contains("priorityCircle") && (event.key === "Enter" || event.key === " ")) {
             event.preventDefault();
             handleInteraction(event.target);
         }
     });
 
-    // Updating selector witout interacting with the element (data changes observed)
+    // adds a new METHOD that updates selector without
+    // interacting with the element (data changes observed)
     selectorElement.updateDisplay = (newPriority) => {
         updateVisualState(newPriority);
     };
 }
 
+
+// Adds a complete task item set to the tasks container
 function addTaskInputRow(containerElement) {
     if (!containerElement) return;
 
@@ -161,16 +181,19 @@ function addTaskInputRow(containerElement) {
     // inserts a new task row set into the modal task area
     containerElement.insertAdjacentHTML('beforeend', taskRowHtml);
 
-    // select the new task row,
+    // selects the newly created task row 
     const newRowElement = containerElement.querySelector(".taskInputRow:last-child");
+    
     if (newRowElement) {
+        // selects priority circles container for the task
         const prioritySelectorElement = newRowElement.querySelector(".prioritySelector");
         if (prioritySelectorElement) {
             // set event listeners and initial priority state for the entire task row
             initializeExistingPrioritySelector(prioritySelectorElement, 0, (newPriority) => {
                 console.log(`Priority for a task in a new row was set to: ${newPriority}`);
-                // sets the dataset property of the ENTIRE ROW (the task item) to have selectedPriority
-                // which will TEMPORARILY STORE the priority for use when item is blurred or the enter button is pressed
+                // sets the dataset property of
+                // the ENTIRE ROW (the task item) to have 
+                // selectedPriority
                 newRowElement.dataset.priority = newPriority;
             })
         }
@@ -341,11 +364,13 @@ function gatherAndSaveModalData() {
     }
 }
 
+// Opens the modal and loads base inputs for creating a new project
 function openModalForNewProj() {
     console.log("Setting up modal for a NEW project...");
     currentProjIdForModal = null; // reset state of modal to set up new project
 
     // Custom-event to signal modal opening
+    // hides addHomeButton from main page view
     const modalOpenedEvent = new CustomEvent('modalHasOpened', {
         bubbles: true, // So the event bubbles up the DOM Tree
         composed: true // allows event to cross DOM boundaries
@@ -354,6 +379,7 @@ function openModalForNewProj() {
     modal.dispatchEvent(modalOpenedEvent);
     console.log("modalHasOpened event dispatched.")
 
+    // error-check for missing modal area
     if (!modalContentArea) {
         console.error("Cannot open modal: Modal Content Area doesnt exist!");
         return;
