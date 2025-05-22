@@ -233,6 +233,29 @@ function addTaskInputRow(containerElement) {
                     const taskObjects = [];
                     const remainingTaskRowElements = containerElement.querySelectorAll(".taskInputRow");
 
+                    if (remainingTaskRowElements.length === 0) {
+                        // If no rows are left at all, add a new one
+                        console.log("No task rows left. Adding a new empty task row.");
+                        addTaskInputRow(containerElement);
+                    } else {
+                        // check if empty row exists
+                        const hasAnEmptyInputRow = Array.from(remainingTaskRowElements).some(rowEl => {
+                            // selects the taskTextInput in each row
+                            const textInput = rowEl.querySelector(".taskTextInputNew");
+                            // check if the value of the text input is empty
+                            return textInput && textInput.value.trim() === "";
+                        });
+
+                        if (!hasAnEmptyInputRow) {
+                            // Adds empty task row if all tasks have text values
+                            console.log("All remaining task rows have text. Adding a new empty one.");
+                            addTaskInputRow(containerElement, saveCallback); // Pass the saveCallback again
+                        } else {
+                            console.log("An empty task input row already exists. Not adding another.");
+                        }
+                    }
+                }); // CONTINUE FROM HERE
+
                     remainingTaskRowElements.forEach((rowEl, index) => {
                         const textInput = rowEl.querySelector(".taskTextInputNew");
                         const taskText = textInput ? textInput.value.trim() : "";
@@ -253,6 +276,7 @@ function addTaskInputRow(containerElement) {
                             });
                         }
                     });
+
                     console.log(`Updating project ${currentProjIdForModal} after task deletion. New task list:`, taskObjects);
                     // Now call updateProject with the newly formed list of tasks
                     updateProject(currentProjIdForModal, { tasks: taskObjects });
@@ -267,21 +291,22 @@ function addTaskInputRow(containerElement) {
     }
 }
 
-function gatherAndSaveModalData() {
+function saveAndUpdateModalData() {
     if (!modalContentArea) {
         console.error("Modal content area not found. Cannot save.");
         return false;
     }
 
-    // Get project title
-    const titleElement = modalContentArea.querySelector(".titleText") || // Used in openModalForExistingProject
-                              modalContentArea.querySelector(".titleInput");      // Used in openModalForNewProj
+    // Get's project title element (p or input)
+    const titleElement = modalContentArea.querySelector(".titleText") || // if openModalForExistingProject
+    modalContentArea.querySelector(".titleInput"); // if openModalForNewProj
 
     // if no title, display warning
     if (!titleElement) {
         console.warn("No title element found in modal.")
     }
 
+    // takes title value from title element
     const currentProjectTitle = titleElement ? titleElement.value.trim() : "";
 
     // Collect Task Objects from all .taskInputRow elements
@@ -291,11 +316,13 @@ function gatherAndSaveModalData() {
     taskRowElements.forEach((rowEl, index) => {
         // Query for task text input (could be .taskTextInputNew or .taskTextInputExisting)
         const textInput = rowEl.querySelector(".taskTextInputNew") || rowEl.querySelector(".taskTextInputExisting");
+
+        // grabs text value of the task
         const taskText = textInput ? textInput.value.trim() : "";
 
         if (taskText) { // Only process rows that have task text
             const checkbox = rowEl.querySelector(".taskCheckBoxNew") || rowEl.querySelector(".taskCheckBoxExisting");
-            // If the checkbox itself is the source of truth for 'completed' when saving:
+            // if checkbox exists, grab completed value (true or false)
             const isCompleted = checkbox ? checkbox.checked : (rowEl.dataset.completed === 'true');
 
             // Priority and Due Date are read from dataset attributes,
@@ -379,6 +406,9 @@ function openModalForNewProj() {
     modal.dispatchEvent(modalOpenedEvent);
     console.log("modalHasOpened event dispatched.")
 
+    // creates empty project in storage
+    newProject("");
+
     // error-check for missing modal area
     if (!modalContentArea) {
         console.error("Cannot open modal: Modal Content Area doesnt exist!");
@@ -398,6 +428,7 @@ function openModalForNewProj() {
     const titleInput = modalContentArea.querySelector(".titleInput");
     const taskAreaContainer = modalContentArea.querySelector(".taskArea");
 
+    // adds one empty task input row on initialization of new proj
     if (taskAreaContainer) {
         addTaskInputRow(taskAreaContainer);
     } else {
@@ -408,7 +439,7 @@ function openModalForNewProj() {
     if (titleInput) {
         // callback function for when exiting the title input element
         const titleSaveHandler = () => {
-            gatherAndSaveModalData();
+            saveAndUpdateModalData();
         };
 
         // calls title save to NEW PROJECT or EXISTING PROJECT
