@@ -249,13 +249,13 @@ function addTaskInputRow(containerElement) {
                         if (!hasAnEmptyInputRow) {
                             // Adds empty task row if all tasks have text values
                             console.log("All remaining task rows have text. Adding a new empty one.");
-                            addTaskInputRow(containerElement, saveCallback); // Pass the saveCallback again
+                            addTaskInputRow(containerElement);
                         } else {
                             console.log("An empty task input row already exists. Not adding another.");
                         }
                     }
-                }); // CONTINUE FROM HERE
 
+                    // Handles re-populating the task objects list with the remaining task elements
                     remainingTaskRowElements.forEach((rowEl, index) => {
                         const textInput = rowEl.querySelector(".taskTextInputNew");
                         const taskText = textInput ? textInput.value.trim() : "";
@@ -291,6 +291,7 @@ function addTaskInputRow(containerElement) {
     }
 }
 
+// Handles general save mechanics
 function saveAndUpdateModalData() {
     if (!modalContentArea) {
         console.error("Modal content area not found. Cannot save.");
@@ -315,7 +316,8 @@ function saveAndUpdateModalData() {
 
     taskRowElements.forEach((rowEl, index) => {
         // Query for task text input (could be .taskTextInputNew or .taskTextInputExisting)
-        const textInput = rowEl.querySelector(".taskTextInputNew") || rowEl.querySelector(".taskTextInputExisting");
+        const textInput = rowEl.querySelector(".taskTextInputNew") || // for newly-added tasks
+         rowEl.querySelector(".taskTextInputExisting"); // for previously input tasks 
 
         // grabs text value of the task
         const taskText = textInput ? textInput.value.trim() : "";
@@ -350,6 +352,7 @@ function saveAndUpdateModalData() {
             console.log("New project: Empty title and no tasks. Not creating.");
             return false;
         }
+
         const effectiveTitle = currentProjectTitle || "Untitled";
         const createdProject = newProject(effectiveTitle); // from project-data.js
 
@@ -373,23 +376,28 @@ function saveAndUpdateModalData() {
             console.error("Failed to create new project shell.");
             return false;
         }
+        
     } else { // UPDATING AN EXISTING PROJECT
         console.log(`Updating project ID: ${currentProjIdForModal} ('${currentProjectTitle}')`);
         // For existing projects, ensure new tasks added get a proper ID structure
-        const finalTaskObjectsForUpdate = taskObjects.map((task, idx) => {
+        const finalTaskObjectsForUpdate = taskObjects.map((task, index) => {
              if (task.id.startsWith("task_new_")) { // Task was newly added to this existing project
-                const newTaskId = `task_${currentProjIdForModal}_${idx}_${Date.now()}`;
-                 if (taskRowElements[idx]) {
-                    taskRowElements[idx].dataset.taskId = newTaskId;
+                const newTaskId = `task_${currentProjIdForModal}_${index}_${Date.now()}`;
+                // If the task DOM element exists, set it's task-id property
+                if (taskRowElements[index]) {
+                    taskRowElements[index].dataset.taskId = newTaskId;
                 }
                 return { ...task, id: newTaskId };
              }
              return task; // Existing tasks should already have their persistent IDs
         });
+        // Updates the project-data with current values
         updateProject(currentProjIdForModal, { title: currentProjectTitle, tasks: finalTaskObjectsForUpdate });
         return true;
     }
 }
+
+// CONTINUE: IMPLEMENT THE SAVEANDUPDATEMODALDATA IN THE MODAL CODE BLOCKS
 
 // Opens the modal and loads base inputs for creating a new project
 function openModalForNewProj() {
