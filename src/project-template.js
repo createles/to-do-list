@@ -90,6 +90,12 @@ function renderProjectCard(projItem) {
         tasks.forEach((task, index) => {
             const projCardTaskRow = document.createElement("div");
             projCardTaskRow.classList.add("projectCardTaskRow");
+            
+            // stops the click on items in the task area from bubbling up and triggering
+            // the openModal behavior on projCard
+            projCardTaskRow.addEventListener("click", (event) => {
+                event.stopPropagation();
+            })
 
             const checkBox = document.createElement("input")
             checkBox.type = "checkbox";
@@ -121,12 +127,6 @@ function renderProjectCard(projItem) {
                 } else {
                     console.error("Project to update not found in projects folder.");
                 }
-            })
-
-            // stops the click event from bubbling up and triggering
-            // the openModal behavior on projCard
-            checkBox.addEventListener("click", (event) => {
-                event.stopPropagation();
             })
 
             const taskContent = document.createElement("p");
