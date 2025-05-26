@@ -158,6 +158,8 @@ function initializeExistingPrioritySelector(selectorElement, initialPriority = 0
     };
 }
 
+// FIGURE OUT DELETING TASK ROW WHEN ALL TEXT IS DELETED FUNCTION
+// IN AddTaskInputRow
 
 // Adds a complete task item set to the tasks container
 function addTaskInputRow(containerElement) {
@@ -308,7 +310,17 @@ function saveAndUpdateModalData() {
     }
 
     // takes title value from title element
-    const currentProjectTitle = titleElement ? titleElement.value.trim() : "";
+    let currentProjectTitle = "";
+    if (titleElement) {
+        // if it's an input element, take VALUE
+        if (titleElement.tagName === "INPUT" || titleElement.tagName === "TEXTAREA") {
+            currentProjectTitle = titleElement.value.trim();
+        
+        // if it's a p element (existing title)
+        } else {
+            currentProjectTitle = titleElement.textContent.trim();
+        }
+    }
 
     // Collect Task Objects from all .taskInputRow elements
     const taskObjects = [];
@@ -397,8 +409,6 @@ function saveAndUpdateModalData() {
     }
 }
 
-// CONTINUE: IMPLEMENT THE SAVEANDUPDATEMODALDATA IN THE MODAL CODE BLOCKS
-
 // Opens the modal and loads base inputs for creating a new project
 function openModalForNewProj() {
     console.log("Setting up modal for a NEW project...");
@@ -415,7 +425,7 @@ function openModalForNewProj() {
     console.log("modalHasOpened event dispatched.")
 
     // creates empty project in storage
-    newProject("");
+    newProject();
 
     // error-check for missing modal area
     if (!modalContentArea) {
@@ -425,8 +435,8 @@ function openModalForNewProj() {
 
     const newProjectHtml = `
                 <input type="text" class="titleInput" placeholder="Title">
+                <h4>To-do:</h4>
                 <div class="taskArea">
-                    <h4>To-do:</h4>
                 </div>`;
 
     // set base elements for setting up new project (inputs)
@@ -450,7 +460,7 @@ function openModalForNewProj() {
             saveAndUpdateModalData();
         };
 
-        // calls title save to NEW PROJECT or EXISTING PROJECT
+        // calls title save to NEW PROJECT or update to currently opened project
         titleInput.addEventListener("blur", debounce(titleSaveHandler, 300));
         titleInput.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
@@ -458,6 +468,8 @@ function openModalForNewProj() {
                 titleInput.blur();
             }
         });
+        // immediately places caret on the title input element for
+        // editing as soon as modal opens
         requestAnimationFrame(() => titleInput.focus());
     } else {
         console.error("Could not find title input element after rendering!");
@@ -478,31 +490,6 @@ function openModalForNewProj() {
                 }
             }
         });
-
-        // **OLD**
-        // // blur doesn't bubble up the DOM so focusout is used
-        // taskAreaContainer.addEventListener('focusout', (event) => {
-        //     // check if blur was fired from a task text input 
-        //     if (event.target.classList.contains("taskTextInputNew")) {
-        //         const blurredTaskInput = event.target;
-
-        //         if (blurredTaskInput.value.trim() !== "") {
-        //             console.log("Task input blurred:", blurredTaskInput.value);
-
-        //             const titleInput = modalContentArea.querySelector(".titleInput");
-        //             const currentTitle = titleInput ? titleInput.value.trim() : "";
-
-        //             const allTaskInputs = taskAreaContainer.querySelectorAll(".taskTextInputNew");
-        //             // creates a shallow copied version of the array of the objects in allTaskInputs
-        //             const allTaskStrings = Array.from(allTaskInputs)
-        //                 .map(input => input.value.trim())
-        //                 .filter(Boolean); // filters out empty task strings
-
-        //             console.log(`Updating project ${currentProjIdForModal} with title: "${currentTitle}" and tasks:`, allTaskStrings)
-        //             updateProject(currentProjIdForModal, { title: currentTitle, tasks: allTaskStrings });
-        //         }
-        //     }
-        // });
 
         taskAreaContainer.addEventListener("keydown", (event) => {
             if (event.target.classList.contains("taskTextInputNew") && event.key === "Enter") {
@@ -530,6 +517,48 @@ function openModalForNewProj() {
         });
     }
 
+    if (modalContentArea) {
+        // For text inputs (title, task text) and date inputs, use focus events
+        modalContentArea.addEventListener("focusin", (event) => {
+            const target = event.target;
+            // check if target is an input we are tracking for changes
+            if (target.matches(".titleInput, .taskTextInputNew, .taskTextInputExisting, .taskDueDateInput, .taskDueDateInputExisting")) {
+                target.dataset.originalValue = target.value; // stores the current value before editing when focused
+            }
+        });
+
+        modalContentArea.addEventListener("focusout", (event) => {
+            const target = event.target;
+            // check for text and date input
+            if (target.matches(".titleInput, .taskTextInputNew, .taskTextInputExisting, .taskDueDateInput, .taskDueDateInputExisting")) {
+                // check for changes by comparing original vs current value
+                if (target.value !== target.dataset.originalValue) {
+                    console.log(`Value changed for ${target.className || target.id}. New: "${target.value}", Old: "${target.dataset.originalValue}". Triggering save.`)
+                    // call debounced save function
+                    debounce(saveAndUpdateModalData, 300);
+                } else {
+                    console.log("No changes observed. No save triggered.")
+                }
+                // remove temporary attribute from element
+                delete target.dataset.originalValue;
+            }
+        });
+
+        // listen for checkBox changes
+        modalContentArea.addEventListener("change", (event) => {
+            const target = event.target;
+            if (target.matches(".taskCheckBoxNew, taskCheckBoxExisting")) {
+                // change event indicates a state change (checkbox marked vs unmarked)
+                console.log(`Checkbox ${target.className || target.id} changed. Checked ${target.checked}. Triggering save.`);
+                // update the ROW'S dataset to reflect change
+                const taskRow = target.closest(".taskInputRow");
+                if (taskRow) {
+                    taskRow.dataset.completed = target.checked;
+                }
+                debounce(saveAndUpdateModalData, 300); // Call save function
+            }
+        })
+    }
     showModal();
 }
 
