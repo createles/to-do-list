@@ -158,9 +158,6 @@ function initializeExistingPrioritySelector(selectorElement, initialPriority = 0
     };
 }
 
-// FIGURE OUT DELETING TASK ROW WHEN ALL TEXT IS DELETED FUNCTION
-// IN AddTaskInputRow
-
 // Adds a complete task item set to the tasks container
 function addTaskInputRow(containerElement) {
     if (!containerElement) return;
@@ -175,7 +172,7 @@ function addTaskInputRow(containerElement) {
                             <span class="priorityCircle" data-priority-value="2" role="button" tabindex="0" aria-label="Set priority to 2: Medium"></span>
                             <span class="priorityCircle" data-priority-value="3" role="button" tabindex="0" aria-label="Set priority to 3: High"></span>
                         </div>
-                        <input type="date" class"taskDueDateInput" aria-label="Task due date">
+                        <input type="date" class="taskDueDateInput" aria-label="Task due date">
                         <button class="taskDelete">x</button>
                     </div>
     `;
@@ -185,8 +182,35 @@ function addTaskInputRow(containerElement) {
 
     // selects the newly created task row 
     const newRowElement = containerElement.querySelector(".taskInputRow:last-child");
+    const textInput = newRowElement.querySelector(".taskTextInputNew");
     
     if (newRowElement) {
+
+        // if (textInput) {
+        //     textInput.addEventListener("focusin", () => {
+        //             textInput.dataset.originalValue = textInput.value; // saves the original value of the task text
+        //     });
+
+        //     textInput.addEventListener("blur", () => {
+        //         const currentValue = textInput.value.trim();
+        //         const originalValue = textInput.dataset.originalValue || "";
+
+        //         // compare whether the task text was completely deleted, and whether it originally had any text value
+        //         if (currentValue === "" && (originalValue !== "" || newRowElement.dataset.taskId)) {
+        //             console.log(`Task text for task ${newRowElement.dataset.taskId} was cleared. Removing from tasks list.`)
+        //             newRowElement.remove();
+        //         // if the element is a newly created task but had it's text deleted before blurring, delete the task row
+        //         } else if (currentValue === "" && (originalValue === "" && newRowElement.nextElementSibling !== null)) {
+        //             console.log(`Task text for task ${newRowElement.dataset.taskId} was cleared. Removing from tasks list.`)
+        //             newRowElement.remove();
+        //         }
+
+        //         debounce(saveAndUpdateModalData, 300);
+        //         // clears the temporary property value as to not take up memory
+        //         delete textInput.dataset.originalValue;
+        //     })
+        // }
+
         // selects priority circles container for the task
         const prioritySelectorElement = newRowElement.querySelector(".prioritySelector");
         if (prioritySelectorElement) {
@@ -197,6 +221,7 @@ function addTaskInputRow(containerElement) {
                 // the ENTIRE ROW (the task item) to have 
                 // selectedPriority
                 newRowElement.dataset.priority = newPriority;
+                debouncedSave(); // *IMPT: call debouncedSave here to save the change in priority
             })
         }
 
@@ -409,6 +434,9 @@ function saveAndUpdateModalData() {
     }
 }
 
+// define the debounced save function
+const debouncedSave = debounce(saveAndUpdateModalData, 300);
+
 // Opens the modal and loads base inputs for creating a new project
 function openModalForNewProj() {
     console.log("Setting up modal for a NEW project...");
@@ -424,8 +452,6 @@ function openModalForNewProj() {
     modal.dispatchEvent(modalOpenedEvent);
     console.log("modalHasOpened event dispatched.")
 
-    // creates empty project in storage
-    newProject();
 
     // error-check for missing modal area
     if (!modalContentArea) {
@@ -455,13 +481,8 @@ function openModalForNewProj() {
     }
 
     if (titleInput) {
-        // callback function for when exiting the title input element
-        const titleSaveHandler = () => {
-            saveAndUpdateModalData();
-        };
-
-        // calls title save to NEW PROJECT or update to currently opened project
-        titleInput.addEventListener("blur", debounce(titleSaveHandler, 300));
+        // calls save to NEW PROJECT or update to currently opened project
+        titleInput.addEventListener("blur", debouncedSave);
         titleInput.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
                 event.preventDefault();
@@ -535,7 +556,7 @@ function openModalForNewProj() {
                 if (target.value !== target.dataset.originalValue) {
                     console.log(`Value changed for ${target.className || target.id}. New: "${target.value}", Old: "${target.dataset.originalValue}". Triggering save.`)
                     // call debounced save function
-                    debounce(saveAndUpdateModalData, 300);
+                    debouncedSave();
                 } else {
                     console.log("No changes observed. No save triggered.")
                 }
@@ -555,13 +576,25 @@ function openModalForNewProj() {
                 if (taskRow) {
                     taskRow.dataset.completed = target.checked;
                 }
-                debounce(saveAndUpdateModalData, 300); // Call save function
+                debouncedSave();
             }
-        })
+        });
+
+        // listen for enter key press
+        modalContentArea.addEventListener('keydown', (event) => {
+            const target = event.target;
+            if (target.matches('.titleInput, .taskTextInputNew, .taskTextInputExisting')) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Prevent default form submission/newline in textarea
+                    target.blur(); // Trigger the 'focusout' event, which will then check for changes and save
+                }
+            }
+        });
     }
     showModal();
 }
 
+// CONTINUE: check why priority selector is setting priority to 0 after changes
 function openModalForExistingProject(projectId) {
     const project = selectProjectById(projectId);
 
@@ -638,7 +671,7 @@ function openModalForExistingProject(projectId) {
                     const taskToUpdate = project.tasks.find(t => t.id === taskId);
                     if (taskToUpdate) {
                         taskToUpdate.priority = newPriority;
-                        updateProject(currentProjIdForModal, { tasks: project.tasks });
+                        debouncedSave();
                     }
                 });
             }
@@ -651,7 +684,7 @@ function openModalForExistingProject(projectId) {
                     const taskToUpdate = project.tasks.find(t => t.id === taskId);
                     if (taskToUpdate) {
                         taskToUpdate.completed = event.target.checked;
-                        updateProject(currentProjIdForModal, { tasks: project.tasks });
+                        debouncedSave();
                     }
                 });
             }
@@ -662,7 +695,7 @@ function openModalForExistingProject(projectId) {
                     const taskToUpdate = project.tasks.find(t => t.id === taskId);
                     if (taskToUpdate && taskToUpdate.text !== textInput.value.trim()) {
                         taskToUpdate.text = textInput.value.trim();
-                        updateProject(currentProjIdForModal, { tasks: project.tasks });
+                        debouncedSave();
                     }
                 }, 300));
             }
@@ -673,7 +706,7 @@ function openModalForExistingProject(projectId) {
                      const taskToUpdate = project.tasks.find(t => t.id === taskId);
                      if (taskToUpdate) {
                          taskToUpdate.dueDate = event.target.value || null;
-                         updateProject(currentProjIdForModal, { tasks: project.tasks });
+                         debouncedSave();
                      }
                 });
             }
@@ -719,7 +752,7 @@ function openModalForExistingProject(projectId) {
                         });
                         console.log(`Updating project ${currentProjIdForModal} after task deletion. New task list:`, taskObjects);
                         // Now call updateProject with the newly formed list of tasks
-                        updateProject(currentProjIdForModal, { tasks: taskObjects });
+                        debouncedSave();
                     } else {
                         // If currentProjIdForModal is null, the project hasn't been created yet.
                         // Simply removing the row from the DOM is enough.
@@ -737,7 +770,7 @@ function openModalForExistingProject(projectId) {
         projectTitleInput.addEventListener('blur', debounce(() => {
             if (project.title !== projectTitleInput.value.trim()) {
                 project.title = projectTitleInput.value.trim(); // Update local copy
-                updateProject(currentProjIdForModal, { title: project.title }); // Save only title
+                debouncedSave();
             }
         }, 300));
     }
@@ -792,7 +825,7 @@ function openModalForExistingProject(projectId) {
                         console.log(`Title changed from "${originalTitle}" to "${newTitle}"`);
                         project.title = newTitle; // Update the local project object
                         // Call your updateProject function from project-data.js
-                        updateProject(currentProjIdForModal, { title: newTitle });
+                        debouncedSave();
                     }
 
                     // Make the new <p> element editable again
