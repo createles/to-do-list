@@ -367,7 +367,9 @@ function saveAndUpdateModalData() {
             // Priority and Due Date are read from dataset attributes,
             // which should be updated by their respective UI components' event listeners.
             const priority = parseInt(rowEl.dataset.priority || rowEl.dataset.selectedPriority, 10) || 0; // Handle both dataset names for now
-            const dueDateValue = rowEl.dataset.dueDate;
+            // if task has existing due date input, get that value
+            const dateInputInRow = rowEl.querySelector(".taskDueDateInputExisting") || rowEl.querySelector(".taskDueDateInput");
+            const dueDateValue = dateInputInRow ? dateInputInRow.value : rowEl.dataset.dueDate;
 
             const existingTaskId = rowEl.dataset.taskId; // Will be present for tasks loaded for an existing project, or after first save for new tasks
 
@@ -434,8 +436,60 @@ function saveAndUpdateModalData() {
     }
 }
 
+
 // define the debounced save function
 const debouncedSave = debounce(saveAndUpdateModalData, 300);
+
+
+// --- ATTACH EVENT LISTENERS TO THE MODAL CONTENT AREA ON LOAD ---
+if (modalContentArea) {
+    // For storing original values on focus (text inputs, date inputs)
+    modalContentArea.addEventListener('focusin', (event) => {
+        const target = event.target;
+        if (target.matches('.titleInput, .taskTextInputNew, .taskTextInputExisting, .taskDueDateInput, .taskDueDateInputExisting')) {
+            target.dataset.originalValue = target.value; // stores the current value before editing when focused
+        }
+    });
+
+    // For saving on blur if value changed (text inputs, date inputs)
+    modalContentArea.addEventListener('focusout', (event) => {
+        const target = event.target;
+        if (target.matches('.titleInput, .taskTextInputNew, .taskTextInputExisting, .taskDueDateInput, .taskDueDateInputExisting')) {
+            // check for changes by comparing original vs current value
+            if (typeof target.dataset.originalValue !== 'undefined' && target.value !== target.dataset.originalValue) {
+                console.log(`Value changed for ${target.className || target.id}. New: "${target.value}", Old: "${target.dataset.originalValue}". Triggering save.`);
+                debouncedSave(); // call debounced save function
+            } else {
+                console.log("No changes observed. No save triggered.");
+            }
+            delete target.dataset.originalValue; // Clean up
+        }
+    });
+
+    // For checkbox changes
+    modalContentArea.addEventListener('change', (event) => {
+        const target = event.target;
+        const taskRow = target.closest('.taskInputRow');
+        if (target.matches('.taskCheckBoxNew, .taskCheckBoxExisting') && taskRow) {
+            taskRow.dataset.completed = target.checked;
+            console.log(`Checkbox for task row changed. Triggering save.`);
+            debouncedSave();
+        }
+    });
+
+    modalContentArea.addEventListener('keydown', (event) => {
+        const target = event.target;
+        // For Enter key on title and task text inputs to trigger blur (which then triggers save if changed)
+        if (target.matches('.titleInput, .taskTextInputNew, .taskTextInputExisting') && event.key === 'Enter') {
+            event.preventDefault();
+            target.blur();
+        }
+    });
+
+} else {
+    console.error("CRITICAL: modalContentArea not found. Modal UI will be non-interactive.");
+}
+
 
 // Opens the modal and loads base inputs for creating a new project
 function openModalForNewProj() {
@@ -537,64 +591,12 @@ function openModalForNewProj() {
             }
         });
     }
-
-    if (modalContentArea) {
-        // For text inputs (title, task text) and date inputs, use focus events
-        modalContentArea.addEventListener("focusin", (event) => {
-            const target = event.target;
-            // check if target is an input we are tracking for changes
-            if (target.matches(".titleInput, .taskTextInputNew, .taskTextInputExisting, .taskDueDateInput, .taskDueDateInputExisting")) {
-                target.dataset.originalValue = target.value; // stores the current value before editing when focused
-            }
-        });
-
-        modalContentArea.addEventListener("focusout", (event) => {
-            const target = event.target;
-            // check for text and date input
-            if (target.matches(".titleInput, .taskTextInputNew, .taskTextInputExisting, .taskDueDateInput, .taskDueDateInputExisting")) {
-                // check for changes by comparing original vs current value
-                if (target.value !== target.dataset.originalValue) {
-                    console.log(`Value changed for ${target.className || target.id}. New: "${target.value}", Old: "${target.dataset.originalValue}". Triggering save.`)
-                    // call debounced save function
-                    debouncedSave();
-                } else {
-                    console.log("No changes observed. No save triggered.")
-                }
-                // remove temporary attribute from element
-                delete target.dataset.originalValue;
-            }
-        });
-
-        // listen for checkBox changes
-        modalContentArea.addEventListener("change", (event) => {
-            const target = event.target;
-            if (target.matches(".taskCheckBoxNew, taskCheckBoxExisting")) {
-                // change event indicates a state change (checkbox marked vs unmarked)
-                console.log(`Checkbox ${target.className || target.id} changed. Checked ${target.checked}. Triggering save.`);
-                // update the ROW'S dataset to reflect change
-                const taskRow = target.closest(".taskInputRow");
-                if (taskRow) {
-                    taskRow.dataset.completed = target.checked;
-                }
-                debouncedSave();
-            }
-        });
-
-        // listen for enter key press
-        modalContentArea.addEventListener('keydown', (event) => {
-            const target = event.target;
-            if (target.matches('.titleInput, .taskTextInputNew, .taskTextInputExisting')) {
-                if (event.key === 'Enter') {
-                    event.preventDefault(); // Prevent default form submission/newline in textarea
-                    target.blur(); // Trigger the 'focusout' event, which will then check for changes and save
-                }
-            }
-        });
-    }
     showModal();
 }
 
-// CONTINUE: check why priority selector is setting priority to 0 after changes
+
+// CONTINUE: FIGURE OUT HOW TO FIX ADDING TASKS TO TASK AREA INSTEAD OF SIBLING 
+
 function openModalForExistingProject(projectId) {
     const project = selectProjectById(projectId);
 
@@ -614,9 +616,8 @@ function openModalForExistingProject(projectId) {
     // Display project title (as a p) and tasks area
     const existingProjectHtml = `
         <p class="titleText">${project.title}</p>
+                <h4>To-do:</h4>
                 <div class="taskArea">
-                    <h4>To-do:</h4>
-                </div>
     `;
 
     let existingTasksHtml = "";
@@ -634,8 +635,10 @@ function openModalForExistingProject(projectId) {
                             <span class="priorityCircle" data-priority-value="2" role="radio" tabindex="0" aria-label="Set priority to 2: Medium"></span>
                             <span class="priorityCircle" data-priority-value="3" role="radio" tabindex="0" aria-label="Set priority to 3: High"></span>
                         <input type="date" class="taskDueDateInputExisting" value="${task.dueDate || ''}" aria-label="Task due date">
+                        <button class="taskDelete">x</button>
                     </div>
                 </div>
+            </div>
             `;
         });
     } else {
@@ -667,7 +670,9 @@ function openModalForExistingProject(projectId) {
             if (prioritySelectorDiv) {
                 initializeExistingPrioritySelector(prioritySelectorDiv, taskData.priority, (newPriority) => {
                     console.log(`Priority for task ID ${taskId} changed to ${newPriority}`);
-                    // Find task in project.tasks, update its priority, then call updateProject
+
+                    rowElement.dataset.priority = newPriority.toString();
+                    // Find task in project.tasks, update its priority, then call debouncedSave
                     const taskToUpdate = project.tasks.find(t => t.id === taskId);
                     if (taskToUpdate) {
                         taskToUpdate.priority = newPriority;
@@ -676,47 +681,12 @@ function openModalForExistingProject(projectId) {
                 });
             }
 
-            // Attach eventListners for the current task rows checkbox, textInput, and date
-            // These listeners will find the task by taskId, update it, and call updateProject
-            const checkbox = rowElement.querySelector('.taskCheckBoxExisting');
-            if (checkbox) {
-                checkbox.addEventListener('change', (event) => {
-                    const taskToUpdate = project.tasks.find(t => t.id === taskId);
-                    if (taskToUpdate) {
-                        taskToUpdate.completed = event.target.checked;
-                        debouncedSave();
-                    }
-                });
-            }
-
-            const textInput = rowElement.querySelector('.taskTextInputExisting');
-            if (textInput) {
-                textInput.addEventListener('blur', debounce(() => { // Use debounce
-                    const taskToUpdate = project.tasks.find(t => t.id === taskId);
-                    if (taskToUpdate && taskToUpdate.text !== textInput.value.trim()) {
-                        taskToUpdate.text = textInput.value.trim();
-                        debouncedSave();
-                    }
-                }, 300));
-            }
-
-            const dueDateInput = rowElement.querySelector('.taskDueDateInputExisting');
-            if (dueDateInput) {
-                dueDateInput.addEventListener('change', (event) => {
-                     const taskToUpdate = project.tasks.find(t => t.id === taskId);
-                     if (taskToUpdate) {
-                         taskToUpdate.dueDate = event.target.value || null;
-                         debouncedSave();
-                     }
-                });
-            }
-
             // set event listener to delete taskInputRow with delete button
             // update the project to remove the selected task
             const deleteButton = rowElement.querySelector(".taskDelete");
             if (deleteButton) {
                 deleteButton.addEventListener("click", () => {
-                    newRowElement.remove();
+                    rowElement.remove();
                     console.log("Task deleted from UI.");
 
                     // If project has already been created and saved; need to update project
@@ -751,7 +721,7 @@ function openModalForExistingProject(projectId) {
                             }
                         });
                         console.log(`Updating project ${currentProjIdForModal} after task deletion. New task list:`, taskObjects);
-                        // Now call updateProject with the newly formed list of tasks
+                        // Now call debouncedSave with the newly formed list of tasks
                         debouncedSave();
                     } else {
                         // If currentProjIdForModal is null, the project hasn't been created yet.
@@ -824,7 +794,7 @@ function openModalForExistingProject(projectId) {
                     if (newTitle && newTitle !== originalTitle) {
                         console.log(`Title changed from "${originalTitle}" to "${newTitle}"`);
                         project.title = newTitle; // Update the local project object
-                        // Call your updateProject function from project-data.js
+                        // Call your debouncedSave function
                         debouncedSave();
                     }
 
