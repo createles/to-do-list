@@ -185,31 +185,31 @@ function addTaskInputRow(containerElement) {
     const textInput = newRowElement.querySelector(".taskTextInputNew");
     
     if (newRowElement) {
+        // if textInput is clicked and no value is detected on blur, delete the task row
+        if (textInput) {
+            textInput.addEventListener("focusin", () => {
+                    textInput.dataset.originalValue = textInput.value; // saves the original value of the task text
+            });
 
-        // if (textInput) {
-        //     textInput.addEventListener("focusin", () => {
-        //             textInput.dataset.originalValue = textInput.value; // saves the original value of the task text
-        //     });
+            textInput.addEventListener("blur", () => {
+                const currentValue = textInput.value.trim();
+                const oldValue = textInput.dataset.oldValue || "";
 
-        //     textInput.addEventListener("blur", () => {
-        //         const currentValue = textInput.value.trim();
-        //         const originalValue = textInput.dataset.originalValue || "";
+                // compare whether the task text was completely deleted, and whether it originally had any text value
+                if (currentValue === "" && (oldValue !== "" || newRowElement.dataset.taskId)) {
+                    console.log(`Task text for task ${newRowElement.dataset.taskId} was cleared. Removing from tasks list.`)
+                    newRowElement.remove();
+                // if the element is a newly created task but had it's text deleted before blurring, delete the task row
+                } else if (currentValue === "" && (oldValue === "" && newRowElement.nextElementSibling !== null)) {
+                    console.log(`Task text for task ${newRowElement.dataset.taskId} was cleared. Removing from tasks list.`)
+                    newRowElement.remove();
+                }
 
-        //         // compare whether the task text was completely deleted, and whether it originally had any text value
-        //         if (currentValue === "" && (originalValue !== "" || newRowElement.dataset.taskId)) {
-        //             console.log(`Task text for task ${newRowElement.dataset.taskId} was cleared. Removing from tasks list.`)
-        //             newRowElement.remove();
-        //         // if the element is a newly created task but had it's text deleted before blurring, delete the task row
-        //         } else if (currentValue === "" && (originalValue === "" && newRowElement.nextElementSibling !== null)) {
-        //             console.log(`Task text for task ${newRowElement.dataset.taskId} was cleared. Removing from tasks list.`)
-        //             newRowElement.remove();
-        //         }
-
-        //         debounce(saveAndUpdateModalData, 300);
-        //         // clears the temporary property value as to not take up memory
-        //         delete textInput.dataset.originalValue;
-        //     })
-        // }
+                debouncedSave();
+                // clears the temporary property value as to not take up memory
+                delete textInput.dataset.oldValue;
+            })
+        }
 
         // selects priority circles container for the task
         const prioritySelectorElement = newRowElement.querySelector(".prioritySelector");
@@ -448,6 +448,7 @@ if (modalContentArea) {
         const target = event.target;
         if (target.matches('.titleInput, .taskTextInputNew, .taskTextInputExisting, .taskDueDateInput, .taskDueDateInputExisting')) {
             target.dataset.originalValue = target.value; // stores the current value before editing when focused
+            console.log(`FOCUSIN on [${target.className || target.id}]: Stored originalValue = "${target.dataset.originalValue}"`);
         }
     });
 
@@ -455,12 +456,27 @@ if (modalContentArea) {
     modalContentArea.addEventListener('focusout', (event) => {
         const target = event.target;
         if (target.matches('.titleInput, .taskTextInputNew, .taskTextInputExisting, .taskDueDateInput, .taskDueDateInputExisting')) {
+            const currentValue = target.value; // gets current value
+            const originalValue = target.dataset.originalValue;
+
+            // ADD LOGS HERE TO SEE WHAT'S BEING COMPARED
+            console.log(`FOCUSOUT on [${target.className || target.id}]:`);
+            console.log(`  Current Value: "${currentValue}" (type: ${typeof currentValue})`);
+            console.log(`  Original Value from dataset: "${originalValue}" (type: ${typeof originalValue})`);
+
             // check for changes by comparing original vs current value
             if (typeof target.dataset.originalValue !== 'undefined' && target.value !== target.dataset.originalValue) {
                 console.log(`Value changed for ${target.className || target.id}. New: "${target.value}", Old: "${target.dataset.originalValue}". Triggering save.`);
                 debouncedSave(); // call debounced save function
             } else {
-                console.log("No changes observed. No save triggered.");
+                if (typeof originalValue === 'undefined') {
+                    console.log("  DECISION: No changes observed (originalValue was undefined). No save triggered.");
+                } else if (currentValue === originalValue) {
+                    console.log("  DECISION: No changes observed (currentValue is identical to originalValue). No save triggered.");
+                } else {
+                    // This case should ideally not be hit if the above two cover it
+                    console.log("  DECISION: No changes observed (condition not met for unknown reason). No save triggered.");
+                }
             }
             delete target.dataset.originalValue; // Clean up
         }
@@ -550,7 +566,7 @@ function openModalForNewProj() {
         console.error("Could not find title input element after rendering!");
     }
 
-    // Handles new input row creation on successfull task input confirmation
+    // Handles new input row creation on successful task input confirmation
     if (taskAreaContainer) {
         taskAreaContainer.addEventListener('input', (event) => {
             // check if an event fired from a task text input and if it is the last one in the container
@@ -617,46 +633,48 @@ function openModalForExistingProject(projectId) {
     const existingProjectHtml = `
         <p class="titleText">${project.title}</p>
                 <h4>To-do:</h4>
-                <div class="taskArea">
+                <div class="taskArea existingTaskArea"></div>
     `;
 
-    let existingTasksHtml = "";
+    modalContentArea.innerHTML = existingProjectHtml;
+
+    const taskArea = modalContentArea.querySelector(".existingTaskArea");
+    if (!taskArea) {
+        console.error(".existingTaskArea not found within modal.")
+        return;
+    }
+    
 
     if (project.tasks && project.tasks.length > 0) {
         project.tasks.forEach(task => {
             // For each task object, create its HTML row
             // Note: data-task-id is crucial here
-            existingTasksHtml += `
-                <div class="taskInputRow existingTaskRow" data-task-id="${task.id}">
+            const existingTasksHtml = `
+                <div class="taskInputRow existingTaskRow"
+                    data-task-id="${task.id}"
+                    data-completed="${task.completed.toString()}"
+                    data-priority="${task.priority}"
+                    data-due-date="${task.dueDate || ''}">
                         <input type="checkbox" class="taskCheckBoxExisting" ${task.completed ? 'checked' : ''} aria-label="Mark task complete">
                         <input type="text" class="taskTextInputExisting" value="${task.text}" placeholder="add task...">
                         <div class="prioritySelector existingPrioritySelector" aria-label="Task priority">
                             <span class="priorityCircle" data-priority-value="1" role="radio" tabindex="0" aria-label="Set priority to 1: Low"></span>
                             <span class="priorityCircle" data-priority-value="2" role="radio" tabindex="0" aria-label="Set priority to 2: Medium"></span>
                             <span class="priorityCircle" data-priority-value="3" role="radio" tabindex="0" aria-label="Set priority to 3: High"></span>
+                        </div>
                         <input type="date" class="taskDueDateInputExisting" value="${task.dueDate || ''}" aria-label="Task due date">
                         <button class="taskDelete">x</button>
                     </div>
                 </div>
-            </div>
             `;
+            taskArea.insertAdjacentHTML("beforeend", existingTasksHtml);
         });
     } else {
-        existingTasksHtml += `<div class="taskInputRow" data-task-id="" data-completed="false" data-priority="0" data-due-date="">
-                        <input type="checkbox" class="taskCheckBoxNew" aria-label="Mark task complete">
-                        <input type="text" class="taskTextInputNew" placeholder="add task...">
-                        <div class="prioritySelector" aria-label="Task priority">
-                            <span class="priorityCircle" data-priority-value="1" role="button" tabindex="0" aria-label="Set priority to 1: Low"></span>
-                            <span class="priorityCircle" data-priority-value="2" role="button" tabindex="0" aria-label="Set priority to 2: Medium"></span>
-                            <span class="priorityCircle" data-priority-value="3" role="button" tabindex="0" aria-label="Set priority to 3: High"></span>
-                        </div>
-                        <input type="date" class="taskDueDateInput" aria-label="Task due date">
-                        <button class="taskDelete">x</button>
-                    </div>
-    `
-    };
+        addTaskInputRow(taskArea);
+    }
 
-    modalContentArea.innerHTML = existingProjectHtml + existingTasksHtml;
+    // add new task input row to the end
+    addTaskInputRow(taskArea);
 
     // Initializing priority, completed, and date states for each task row
     const existingTaskRows = modalContentArea.querySelectorAll(".existingTaskRow");
@@ -685,65 +703,64 @@ function openModalForExistingProject(projectId) {
             // update the project to remove the selected task
             const deleteButton = rowElement.querySelector(".taskDelete");
             if (deleteButton) {
-                deleteButton.addEventListener("click", () => {
+                deleteButton.addEventListener("click", (event) => {
+                    event.stopPropagation();
                     rowElement.remove();
                     console.log("Task deleted from UI.");
+                    debouncedSave();
 
-                    // If project has already been created and saved; need to update project
-                    if (currentProjIdForModal !== null) {
-
-                        if (!containerElement) {
-                            console.log("Could not find task area container to re-collect and update tasks.");
-                            return;
+                    // check if task area is now empty after task deletion; and addNewInputRow if it is
+                    if (taskArea) {
+                        ;
+                        if (taskArea.children.length === 0) {
+                            addTaskInputRow(taskArea);
                         }
-
-                        const taskObjects = [];
-                        const remainingTaskRowElements = containerElement.querySelectorAll(".taskInputRow");
-
-                        remainingTaskRowElements.forEach((rowEl, index) => {
-                            const textInput = rowEl.querySelector(".taskTextInputNew");
-                            const taskText = textInput ? textInput.value.trim() : "";
-
-                            if (taskText) { // Only include tasks that have text
-                                const isCompleted = rowEl.dataset.completed === 'true';
-                                // Ensure you are reading the correct dataset attribute for priority
-                                const priority = parseInt(rowEl.dataset.priority || rowEl.dataset.selectedPriority, 10) || 0;
-                                const dueDateValue = rowEl.dataset.dueDate;
-
-                                taskObjects.push({
-                                    // retain taskId for retained tasks
-                                    id: rowEl.dataset.taskId || `task_${currentProjIdForModal}_temp_${index}_${Date.now()}`, // Temporary ID if old one isn't set on row
-                                    text: taskText,
-                                    completed: isCompleted,
-                                    priority: priority,
-                                    dueDate: dueDateValue || null
-                                });
-                            }
-                        });
-                        console.log(`Updating project ${currentProjIdForModal} after task deletion. New task list:`, taskObjects);
-                        // Now call debouncedSave with the newly formed list of tasks
-                        debouncedSave();
-                    } else {
-                        // If currentProjIdForModal is null, the project hasn't been created yet.
-                        // Simply removing the row from the DOM is enough.
-                        // The main save (handleSaveNewProject) will later collect tasks from remaining rows.
-                        console.log("Task row removed from UI before initial project save. Data will be correct on save.");
                     }
                 });
             }
         }
     });
 
-    // Add listener for the main project title input
-    const projectTitleInput = modalContentArea.querySelector(".titleInput");
-    if (projectTitleInput) {
-        projectTitleInput.addEventListener('blur', debounce(() => {
-            if (project.title !== projectTitleInput.value.trim()) {
-                project.title = projectTitleInput.value.trim(); // Update local copy
-                debouncedSave();
+    // Handles new input row creation on successful task input confirmation
+    taskArea.addEventListener('input', (event) => {
+        // check if an event fired from a task text input and if it is the last one in the container
+        if (event.target.classList.contains("taskTextInputNew")) {
+            const currentRow = event.target.closest(".taskInputRow");
+            // check if currentRow is the last input row
+            if (currentRow && currentRow === taskArea.querySelector(".taskInputRow:last-child")) {
+                // if user input a value into the last input, create a new input row
+                if (event.target.value.trim() !== "") {
+                    addTaskInputRow(taskArea);
+                }
             }
-        }, 300));
-    }
+        }
+    });
+
+    // Handles new input row creation on keydown
+    taskArea.addEventListener("keydown", (event) => {
+        if (event.target.classList.contains("taskTextInputNew") && event.key === "Enter") {
+            event.preventDefault();
+            const currentRow = event.target.closest(".taskInputRow");
+            // Add new row if last row OR if next row's input is empty
+            const nextRow = currentRow ? currentRow.nextElementSibling : null;
+            // is evaluated as true or false; if nextRow exists, then isLastRow is false, if it doesnt, isLastRow is true
+            const isLastRow = !nextRow;
+
+            if (isLastRow) {
+                // if the last row has a value in the input field, create a new row
+                if (currentRow.value) {
+                    addTaskInputRow(taskArea);
+                    // Focus on the new Input added
+                    const newInput = taskArea.querySelector(".taskInputRow:last-child .taskTextInputNew");
+                    if (newInput) requestAnimationFrame(() => newInput.focus());
+                }
+            } else if (nextRow) {
+                // Focus the next existing input if it's not empty
+                const nextInput = nextRow.querySelector(".taskTextInputNew");
+                if (nextInput) requestAnimationFrame(() => nextInput.focus());
+            }
+        }
+    });
 
     // add listener for p if title already exists
     const projectTitleP = modalContentArea.querySelector(".titleText");
@@ -776,7 +793,7 @@ function openModalForExistingProject(projectId) {
                 // Select the text in the input for easier editing
                 titleEditInput.select();
 
-                // unction to revert back to <p> and save (if changed)
+                // function to revert back to <p> and save (if changed)
                 const saveAndRevertToP = () => {
                     const newTitle = titleEditInput.value.trim();
 
