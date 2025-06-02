@@ -70,6 +70,7 @@ function hideModal() {
 // if exitButton exists, attach listener for hiding the modal and saving the project details
 if (exitButton) {
     exitButton.addEventListener("click", () => {
+        saveAndUpdateModalData();
         hideModal();
         renderAllProjectCards();
     });
@@ -80,6 +81,7 @@ if (exitButton) {
 // if you click outside the modal area (like the background), hideModal and save the project
 if (modalBackground) {
     modalBackground.addEventListener("click", () => {
+        saveAndUpdateModalData();
         hideModal();
         renderAllProjectCards();
     })
@@ -682,6 +684,33 @@ function openModalForExistingProject(projectId) {
         const taskId = rowElement.dataset.taskId;
         const taskData = project.tasks.find(t => t.id === taskId); // Get the specific task data
 
+        // sets delete behavior for existing text inputs; deletes the entire rowElement if blurred with no value
+        const textInput = rowElement.querySelector(".taskTextInputExisting");
+        if (textInput) {
+            textInput.addEventListener("focusin", () => {
+                    textInput.dataset.originalValue = textInput.value; // saves the original value of the task text
+            });
+
+            textInput.addEventListener("blur", () => {
+                const currentValue = textInput.value.trim();
+                const oldValue = textInput.dataset.oldValue || "";
+
+                // compare whether the task text was completely deleted, and whether it originally had any text value
+                if (currentValue === "" && (oldValue !== "" || rowElement.dataset.taskId)) {
+                    console.log(`Task text for task ${rowElement.dataset.taskId} was cleared. Removing from tasks list.`)
+                    rowElement.remove();
+                // if the element is a newly created task but had it's text deleted before blurring, delete the task row
+                } else if (currentValue === "" && (oldValue === "" && rowElement.nextElementSibling !== null)) {
+                    console.log(`Task text for task ${rowElement.dataset.taskId} was cleared. Removing from tasks list.`)
+                    rowElement.remove();
+                }
+
+                debouncedSave();
+                // clears the temporary property value as to not take up memory
+                delete textInput.dataset.oldValue;
+            })
+        }
+
         // Display exisiting priorty
         if (taskData) {
             const prioritySelectorDiv = rowElement.querySelector(".existingPrioritySelector");
@@ -723,7 +752,8 @@ function openModalForExistingProject(projectId) {
 
     // Handles new input row creation on successful task input confirmation
     taskArea.addEventListener('input', (event) => {
-        // check if an event fired from a task text input and if it is the last one in the container
+        // check if an event fired from a task text input OR existing task text input (from existing project modal)
+        // and if it is the last one in the container
         if (event.target.classList.contains("taskTextInputNew")) {
             const currentRow = event.target.closest(".taskInputRow");
             // check if currentRow is the last input row
