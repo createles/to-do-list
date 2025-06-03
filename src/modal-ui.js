@@ -488,9 +488,26 @@ if (modalContentArea) {
     modalContentArea.addEventListener('change', (event) => {
         const target = event.target;
         const taskRow = target.closest('.taskInputRow');
+
         if (target.matches('.taskCheckBoxNew, .taskCheckBoxExisting') && taskRow) {
+            // stores true if it is checked, false if not
+            const isChecked = event.target.checked;
+
+            // sets task rows completed state
             taskRow.dataset.completed = target.checked;
             console.log(`Checkbox for task row changed. Triggering save.`);
+            
+            const taskText = taskRow.querySelector(".taskTextInputNew, .taskTextInputExisting");
+            if (taskText) {
+                if (isChecked) {
+                    taskText.classList.add("completed");
+                } else {
+                    taskText.classList.remove("completed");
+                }
+            } else {
+                console.warn("could not find task element to apply or remove the completed style.");
+            }
+
             debouncedSave();
         }
     });
@@ -669,7 +686,17 @@ function openModalForExistingProject(projectId) {
                     </div>
                 </div>
             `;
-            taskArea.insertAdjacentHTML("beforeend", existingTasksHtml);
+
+            taskArea.insertAdjacentHTML("beforeend", existingTasksHtml); // append the task row to the DOM
+            const newlyAddedTaskRow = taskArea.lastElementChild; // reference the newly added task row
+            
+            // if the task row's completed dataset is "true", add strike-through
+            if (newlyAddedTaskRow.dataset.completed === "true") {
+                newlyAddedTaskRow.querySelector(".taskTextInputNew, .taskTextInputExisting").classList.add("completed");
+            } else { // else remove strike-through
+                newlyAddedTaskRow.querySelector(".taskTextInputNew, .taskTextInputExisting").classList.remove("completed");
+            }
+
         });
 
         // add new task input row to the end

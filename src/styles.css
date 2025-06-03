@@ -88,7 +88,7 @@ body {
     display: flex;
 }
 
-.projectCardTaskContent.completed {
+.completed {
     text-decoration: line-through;
     color: #777;
 }
