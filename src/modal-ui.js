@@ -671,12 +671,13 @@ function openModalForExistingProject(projectId) {
             `;
             taskArea.insertAdjacentHTML("beforeend", existingTasksHtml);
         });
+
+        // add new task input row to the end
+        addTaskInputRow(taskArea);
     } else {
         addTaskInputRow(taskArea);
     }
 
-    // add new task input row to the end
-    addTaskInputRow(taskArea);
 
     // Initializing priority, completed, and date states for each task row
     const existingTaskRows = modalContentArea.querySelectorAll(".existingTaskRow");
