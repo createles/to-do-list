@@ -394,7 +394,7 @@ function saveAndUpdateModalData() {
             return false;
         }
 
-        const effectiveTitle = currentProjectTitle || "Untitled";
+        const effectiveTitle = currentProjectTitle || "Untitled Project";
         const createdProject = newProject(effectiveTitle); // from project-data.js
 
         if (createdProject && createdProject.id !== undefined) {
@@ -419,7 +419,10 @@ function saveAndUpdateModalData() {
         }
         
     } else { // UPDATING AN EXISTING PROJECT
-        console.log(`Updating project ID: ${currentProjIdForModal} ('${currentProjectTitle}')`);
+        const currentProj = selectProjectById(currentProjIdForModal);
+        const effectiveTitle = currentProj.title;
+
+        console.log(`Updating project ID: ${currentProjIdForModal} ('${effectiveTitle}')`);
         // For existing projects, ensure new tasks added get a proper ID structure
         const finalTaskObjectsForUpdate = taskObjects.map((task, index) => {
              if (task.id.startsWith("task_new_")) { // Task was newly added to this existing project
@@ -433,11 +436,12 @@ function saveAndUpdateModalData() {
              return task; // Existing tasks should already have their persistent IDs
         });
         // Updates the project-data with current values
-        updateProject(currentProjIdForModal, { title: currentProjectTitle, tasks: finalTaskObjectsForUpdate });
+        updateProject(currentProjIdForModal, { title: effectiveTitle, tasks: finalTaskObjectsForUpdate });
         return true;
     }
 }
 
+/// FIGURE OUT THE TITLE ISSUES WITH UPDATING A PROJECT ^^
 
 // define the debounced save function
 const debouncedSave = debounce(saveAndUpdateModalData, 300);
