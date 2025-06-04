@@ -1,5 +1,5 @@
 import { newProject, updateProject, selectProjectById } from "./project-data";
-import { renderAllProjectCards } from "./project-template";
+import { renderAllProjectCards, populateQuickCards } from "./project-template";
 
 const modal = document.querySelector(".modal");
 const modalContentArea = modal ? modal.querySelector(".modalContentArea") : null;
@@ -73,6 +73,7 @@ if (exitButton) {
         saveAndUpdateModalData();
         hideModal();
         renderAllProjectCards();
+        populateQuickCards();
     });
 } else if (modal) {
     console.warn("Modal not found.");
@@ -449,6 +450,9 @@ function saveAndUpdateModalData() {
 const debouncedSave = debounce(saveAndUpdateModalData, 300);
 
 
+
+// reorders the tasks in the modal task area based on completion status
+// completed tasks are pushed to the bottom while incomplete tasks are on top
 function reorderTasksInModal(taskAreaElement) {
     if (!taskAreaElement) {
         console.warn("Task area element not found.");
@@ -552,6 +556,7 @@ if (modalContentArea) {
 
             debouncedSave();
 
+            // reorder the tasks in the modal after checkbox change observed
             const taskArea = target.closest(".taskArea, .existingTaskArea");
 
             reorderTasksInModal(taskArea);
@@ -675,8 +680,6 @@ function openModalForNewProj() {
     showModal();
 }
 
-
-// CONTINUE: FIGURE OUT HOW TO FIX ADDING TASKS TO TASK AREA INSTEAD OF SIBLING 
 
 function openModalForExistingProject(projectId) {
     const project = selectProjectById(projectId);
