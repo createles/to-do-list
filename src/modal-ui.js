@@ -449,6 +449,42 @@ function saveAndUpdateModalData() {
 const debouncedSave = debounce(saveAndUpdateModalData, 300);
 
 
+function reorderTasksInModal(taskAreaElement) {
+    if (!taskAreaElement) {
+        console.warn("Task area element not found.");
+        return;
+    }
+
+    // select the tasks in the tasks area
+    const allTaskRows = Array.from(taskAreaElement.querySelectorAll(".taskInputRow"))
+
+    if (allTaskRows.length === 0) {
+        return;
+    }
+
+    const incompleteRows = [];
+    const completedRows = [];
+
+    // filter out completed and incomplete rows based on completed dataset
+    allTaskRows.forEach(rowEl => {
+        const isCompleted = (rowEl.dataset.completed === "true"); // reads the completed status (true or false)
+
+        if (isCompleted) {
+            completedRows.push(rowEl);
+        } else {
+            incompleteRows.push(rowEl);
+        }
+    });
+
+    // re-arrange elements with new order
+    // insert the rows BEFORE the last element (always a new input row)
+    const lastChild = taskAreaElement.lastElementChild;
+    incompleteRows.forEach(rowEl => taskAreaElement.insertBefore(rowEl, lastChild));
+    completedRows.forEach(rowEl => taskAreaElement.insertBefore(rowEl, lastChild));
+
+    console.log("Tasks in modal re-ordered.")
+}
+
 // --- ATTACH EVENT LISTENERS TO THE MODAL CONTENT AREA ON LOAD ---
 if (modalContentArea) {
     // For storing original values on focus (text inputs, date inputs)
@@ -515,6 +551,10 @@ if (modalContentArea) {
             }
 
             debouncedSave();
+
+            const taskArea = target.closest(".taskArea, .existingTaskArea");
+
+            reorderTasksInModal(taskArea);
         }
     });
 
@@ -909,6 +949,8 @@ function openModalForExistingProject(projectId) {
         // Initial call to make the title paragraph editable
         makeTitleEditableOnClick(projectTitleP);
     }
+
+    reorderTasksInModal(taskArea);
 
     showModal();
 }
