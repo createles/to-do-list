@@ -314,13 +314,13 @@ function populateQuickCards() {
 
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
-    const tomorrowDay = String(tomorrow).padStart(2, "0");
+    const tomorrowDay = String(tomorrow.getDate()).padStart(2, "0");
 
     const tomorrowFormatted = `${year}-${month}-${tomorrowDay}`;
 
     const afterTomorrow = new Date();
     afterTomorrow.setDate(today.getDate() + 2);
-    const afterTomorrowDay = String(afterTomorrow).padStart(2, "0");
+    const afterTomorrowDay = String(afterTomorrow.getDate()).padStart(2, "0");
 
     const afterTomorrowFormatted = `${year}-${month}-${afterTomorrowDay}`;
 
