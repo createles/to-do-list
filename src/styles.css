@@ -20,11 +20,12 @@ body {
     height: 40%;
     border: 1px solid black;
     display: flex;
+    background-color: #33333386;
+    padding: 10px;
 }
 
 .viewLeft, .viewRight {
     width: 50%;
-    background-color: #33333386;
     display: flex;
     flex-direction: column;
 }
