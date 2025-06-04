@@ -230,4 +230,147 @@ if (addButtonHome) {
     console.error("Add project button not found in the DOM.");
 }
 
-export {loadApp, renderProjectCard, renderAllProjectCards}
+
+function createQuickRowElement(taskObject, projectId) {
+    const quickTaskRow = document.createElement("div");
+    quickTaskRow.classList.add("quickTaskRow");
+
+    quickTaskRow.dataset.taskId = taskObject.id;
+    quickTaskRow.dataset.projectId = projectId;
+
+    quickTaskRow.addEventListener("click", (event) => {
+        event.stopPropagation(); // If these rows are inside something else clickable
+    });
+
+    const checkBox = document.createElement("input");
+    checkBox.type = "checkbox";
+    checkBox.classList.add("quickTaskCheckBox"); // Specific class for styling
+    checkBox.id = `quickcard-proj${projectId}-task${taskObject.id}`;
+    checkBox.checked = taskObject.completed;
+
+    checkBox.addEventListener("change", (event) => {
+        event.stopPropagation();
+        const currentCheckedState = event.target.checked;
+        // Data update logic
+        const projectToUpdate = selectProjectById(projectId); // Ensure selectProjectById is available
+        if (projectToUpdate) {
+            const taskToUpdate = projectToUpdate.tasks.find(t => t.id === taskObject.id);
+            if (taskToUpdate) {
+                taskToUpdate.completed = currentCheckedState;
+                updateProject(projectId, { tasks: projectToUpdate.tasks }); 
+                
+                
+                populateQuickCards(); // This will re-sort and re-render the quick cards
+                renderAllProjectCards(); // update the main project list
+            }
+        }
+    });
+
+    const taskTextElement = document.createElement("p");
+    taskTextElement.classList.add("quickTaskContent");
+    taskTextElement.textContent = taskObject.text;
+    if (taskObject.completed) {
+        taskTextElement.classList.add("completed"); // apply line-through
+    } else {
+        taskTextElement.classList.remove("completed");
+    }
+
+    const taskLabel = document.createElement("label");
+    taskLabel.htmlFor = checkBox.id;
+    taskLabel.append(taskTextElement);
+
+    quickTaskRow.append(checkBox, taskLabel);
+    return quickTaskRow;
+}
+
+function populateQuickCards() {
+    const todaysTasks = document.querySelector(".todaysTasks");
+    const overdueTasks = document.querySelector(".overdueTasks");
+    const upcomingTasks = document.querySelector(".upcomingTasks");
+
+    // clear the contents before re-population
+    todaysTasks.innerHTML = '';
+    overdueTasks.innerHTML = '';
+    upcomingTasks.innerHTML = '';
+
+    // Groups tasks according to their completion status to handle ordering
+    // in the taskList container
+    const incompleteTodaysTasks = document.createDocumentFragment();
+    const completedTodaysTasks = document.createDocumentFragment();
+    const incompleteOverdueTasks = document.createDocumentFragment();
+    const completedOverdueTasks = document.createDocumentFragment();
+    const incompleteUpcomingTasks = document.createDocumentFragment();
+    const completedUpcomingTasks = document.createDocumentFragment();
+
+    const allProjects = getAllProjects();
+
+    // set the format of today's date
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    const todayFormatted = `${year}-${month}-${day}`; // returns today's date in YYYY-MM-DD format
+
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+    const tomorrowDay = String(tomorrow).padStart(2, "0");
+
+    const tomorrowFormatted = `${year}-${month}-${tomorrowDay}`;
+
+    const afterTomorrow = new Date();
+    afterTomorrow.setDate(today.getDate() + 2);
+    const afterTomorrowDay = String(afterTomorrow).padStart(2, "0");
+
+    const afterTomorrowFormatted = `${year}-${month}-${afterTomorrowDay}`;
+
+    if (allProjects && allProjects.length > 0) {
+        allProjects.forEach(projItem => {
+            projItem.tasks.forEach(taskObject => {
+                if (taskObject.dueDate) {
+                    const taskRowElement = createQuickRowElement(taskObject, projItem.id); // create task row
+
+                    if (taskObject.dueDate === todayFormatted) {
+                        console.log(`Task "${taskObject.text}" (ID: ${taskObject.id}) is due today!`);
+
+                        if (taskObject.completed) {
+                            completedTodaysTasks.appendChild(taskRowElement);
+                        } else {
+                            incompleteTodaysTasks.appendChild(taskRowElement);
+                        }
+                    } else if (taskObject.dueDate < todayFormatted) {
+                        if (taskObject.completed) {
+                            completedOverdueTasks.appendChild(taskRowElement);
+                        } else {
+                            incompleteOverdueTasks.appendChild(taskRowElement);
+                        }
+                    } else if (taskObject.dueDate === tomorrowFormatted) {
+                        if (taskObject.completed) {
+                            completedUpcomingTasks.appendChild(taskRowElement);
+                        } else {
+                            incompleteUpcomingTasks.appendChild(taskRowElement);
+                        }
+                    } else if (taskObject.dueDate === afterTomorrowFormatted) {
+                        if (taskObject.completed) {
+                            completedUpcomingTasks.appendChild(taskRowElement);
+                        } else {
+                            incompleteUpcomingTasks.appendChild(taskRowElement);
+                        }
+                    }
+                }
+            });
+        });
+
+        // appends the taskRows AFTER looping through all tasks
+        // adds incompleted tasks first, then completed tasks
+        todaysTasks.appendChild(incompleteTodaysTasks);
+        todaysTasks.appendChild(completedTodaysTasks);
+        overdueTasks.appendChild(incompleteOverdueTasks);
+        overdueTasks.appendChild(completedOverdueTasks);
+        upcomingTasks.appendChild(incompleteUpcomingTasks);
+        upcomingTasks.appendChild(completedUpcomingTasks);
+    }
+
+    // CONTINUE: FINE TUNE QUICK PANE BEHAVIOR eg. whether to add cards to quick panes if they are already marked complete 
+}
+export {loadApp, renderProjectCard, renderAllProjectCards, populateQuickCards}
