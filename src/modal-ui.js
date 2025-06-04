@@ -419,8 +419,12 @@ function saveAndUpdateModalData() {
         }
         
     } else { // UPDATING AN EXISTING PROJECT
-        const currentProj = selectProjectById(currentProjIdForModal);
-        const effectiveTitle = currentProj.title;
+        let effectiveTitle;
+        if (!currentProjectTitle) {
+            effectiveTitle = "Untitled Project";
+        } else {
+            effectiveTitle = currentProjectTitle;
+        }
 
         console.log(`Updating project ID: ${currentProjIdForModal} ('${effectiveTitle}')`);
         // For existing projects, ensure new tasks added get a proper ID structure
@@ -440,8 +444,6 @@ function saveAndUpdateModalData() {
         return true;
     }
 }
-
-/// FIGURE OUT THE TITLE ISSUES WITH UPDATING A PROJECT ^^
 
 // define the debounced save function
 const debouncedSave = debounce(saveAndUpdateModalData, 300);
