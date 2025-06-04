@@ -25,10 +25,19 @@ body {
 .viewLeft, .viewRight {
     width: 50%;
     background-color: #33333386;
+    display: flex;
+    flex-direction: column;
 }
 
 .viewLeft {
-    
+
+}
+
+.todaysTasks, .upcomingTasks, .overdueTasks {
+    width: 90%;
+    height: 80%;
+    align-self: center;
+    background-color: #000c74a6;
 }
 
 .viewRight {
@@ -40,6 +49,13 @@ body {
     width: 100%;
     height: 50%;
     padding-top: 5px;
+    display: flex;
+    flex-direction: column;
+}
+
+.quickTaskRow {
+    display: flex;
+
 }
 
 #projectFolder {
