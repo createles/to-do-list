@@ -45,7 +45,7 @@ function renderAllProjectCards() {
             renderProjectCard(projItem);
         });
         const addButton = createAddButton();
-        projFolder.appendChild(addButton);
+        projFolder.prepend(addButton);
     } else {
         const centerButton = createCenterButton();
         projFolder.append(centerButton);
@@ -121,6 +121,7 @@ function renderProjectCard(projItem) {
                         taskToUpdate.completed = currentCheckedState;
                         updateProject(currentProjId, { tasks: projectToUpdate.tasks })
                         renderAllProjectCards();
+                        populateQuickCards();
                     } else {
                         console.error("Task to update not found in the project's task folder.")
                     }
