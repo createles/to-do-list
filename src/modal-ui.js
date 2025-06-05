@@ -73,7 +73,6 @@ if (exitButton) {
         saveAndUpdateModalData();
         hideModal();
         renderAllProjectCards();
-        populateQuickCards();
     });
 } else if (modal) {
     console.warn("Modal not found.");
@@ -413,6 +412,7 @@ function saveAndUpdateModalData() {
 
             updateProject(currentProjIdForModal, { tasks: finalTaskObjects });
             console.log(`New project ${currentProjIdForModal} ('${effectiveTitle}') created and tasks updated.`);
+            populateQuickCards();
             return true;
         } else {
             console.error("Failed to create new project shell.");
@@ -442,6 +442,7 @@ function saveAndUpdateModalData() {
         });
         // Updates the project-data with current values
         updateProject(currentProjIdForModal, { title: effectiveTitle, tasks: finalTaskObjectsForUpdate });
+        populateQuickCards();
         return true;
     }
 }
@@ -957,4 +958,4 @@ function openModalForExistingProject(projectId) {
 
     showModal();
 }
-export { showModal, openModalForNewProj, openModalForExistingProject };
+export { showModal, openModalForNewProj, openModalForExistingProject, saveAndUpdateModalData };
