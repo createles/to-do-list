@@ -38,8 +38,8 @@ body {
     width: 90%;
     height: 80%;
     align-self: center;
-    background-color: #000c74a6;
     overflow-y: scroll;
+    padding: 5px;
 }
 
 .todaysTasks .quickTaskRow {
@@ -115,6 +115,7 @@ body {
     height: 200px;
     background-color: white;
     position: relative;
+    padding: 5px;
 }
 
 .projectCardTaskList {
@@ -126,6 +127,10 @@ body {
 .projectCardTaskRow {
     display: flex;
     pointer-events: none;
+}
+
+.projectCardCheckbox {
+    margin-right: 5px;
 }
 
 .projectCardCheckbox, .projectCardTaskContent, .projectCard label {
@@ -242,4 +247,19 @@ body {
 .exitButton:hover {
     color: #000;
     background-color: rgba(128, 128, 128, 0.70);
+}
+
+*::-webkit-scrollbar {
+    background: none;
+    width: 8px;
+    height: 5px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.39);
+    border-radius: 5px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #555; /* Darken thumb on hover */
 }
