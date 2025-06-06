@@ -30,9 +30,9 @@ body {
     flex-direction: column;
 }
 
-.viewLeft {
+/* .viewLeft {
 
-}
+} */
 
 .todaysTasks, .upcomingTasks, .overdueTasks {
     width: 90%;
