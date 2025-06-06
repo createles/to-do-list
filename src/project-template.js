@@ -189,6 +189,7 @@ function renderProjectCard(projItem) {
             console.log(`Project "${projTitle}" (ID: ${projId}) has been deleted.`);
 
             renderAllProjectCards(); // refresh projFolder
+            populateQuickCards(); // refresh the quick cards
         }
     });
 
