@@ -85,6 +85,13 @@ function renderProjectCard(projItem) {
     const incompleteTasksFragment = document.createDocumentFragment();
     const completedTasksFragment = document.createDocumentFragment();
 
+    // create wrapper div to hold the completed tasks
+    const completedTasksContainer = document.createElement("div");
+    completedTasksContainer.className = "projectCardCompletedTasks"
+    completedTasksContainer.style.display = "none"; // initially hides the completed tasks
+
+    // CONTINUE: FIGURE OUT TO HAVE PERSISTENT COMPLETED STATES
+
     // if tasks exist, create task items
     if (tasks && tasks.length > 0) {
         tasks.forEach((task, index) => {
@@ -161,9 +168,11 @@ function renderProjectCard(projItem) {
         });
 
         // appends the taskRows AFTER looping through all tasks
-        // adds incompleted tasks first, then completed tasks
+        // adds incompleted tasks first, then the completed tasks wrapper div
         taskList.appendChild(incompleteTasksFragment);
-        taskList.appendChild(completedTasksFragment);
+
+        completedTasksContainer.appendChild(completedTasksFragment);
+        taskList.appendChild(completedTasksContainer);
 
     } else { // If no tasks are found, display message
         const noTasksMessage = document.createElement("p");
@@ -171,6 +180,16 @@ function renderProjectCard(projItem) {
         noTasksMessage.textContent = "No current tasks available."
         taskList.append(noTasksMessage);
     }
+
+    // create show/hide button for completed tasks
+    const showCompletedButton = document.createElement("button");
+    showCompletedButton.textContent = "Show Completed";
+    showCompletedButton.addEventListener("click", (event) => {
+        event.stopPropagation(); // Prevent click from bubbling up to projectCard
+        const isHidden = completedTasksContainer.style.display === "none"; 
+        completedTasksContainer.style.display = isHidden ? "block" : "none";
+        showCompletedButton.textContent = isHidden ? "Hide Completed" : "Show Completed";
+    });
 
     // create trash button
     const trashButton = document.createElement("button");
@@ -198,7 +217,7 @@ function renderProjectCard(projItem) {
         openModalForExistingProject(projId);
     });
 
-    projectCard.append(cardTitle, taskList, trashButton);
+    projectCard.append(cardTitle, taskList, showCompletedButton, trashButton);
     projFolder.append(projectCard);
 }
 
