@@ -128,7 +128,7 @@ function initializeExistingPrioritySelector(selectorElement, initialPriority = 0
             const originalPriority = parseInt(selectorElement.dataset.currentPriority || initialPriority, 10) || 0;
             const clickedPriority = parseInt(targetElement.dataset.priorityValue, 10);
 
-            console.log(`originalPriority is ${originalPriority}`);
+            console.log(`originalPriority is ${originalPriority}.`);
             // If the same priority circle is clicked, resets priority to 0
             // if not, set to the clickedPriority value
             const newPriority = (clickedPriority === originalPriority) ? 0 : clickedPriority;
@@ -232,6 +232,8 @@ function addTaskInputRow(containerElement) {
                 // the ENTIRE ROW (the task item) to have 
                 // selectedPriority
                 newRowElement.dataset.priority = newPriority;
+
+                setPriorityStyle(newRowElement, newPriority);
                 debouncedSave(); // *IMPT: call debouncedSave here to save the change in priority
             })
         }
@@ -755,8 +757,11 @@ function openModalForExistingProject(projectId) {
             } else { // else remove strike-through
                 newlyAddedTaskRow.querySelector(".taskTextInputNew, .taskTextInputExisting").classList.remove("completed");
             }
-
+            
+            // set priority background styling 
+            setPriorityStyle(newlyAddedTaskRow, task.priority);
         });
+
 
         // add new task input row to the end
         addTaskInputRow(taskArea);
@@ -806,6 +811,10 @@ function openModalForExistingProject(projectId) {
                     console.log(`Priority for task ID ${taskId} changed to ${newPriority}`);
 
                     rowElement.dataset.priority = newPriority.toString();
+
+                    // set priority background styling
+                    setPriorityStyle(rowElement, newPriority);
+
                     // Find task in project.tasks, update its priority, then call debouncedSave
                     const taskToUpdate = project.tasks.find(t => t.id === taskId);
                     if (taskToUpdate) {
@@ -967,4 +976,22 @@ function openModalForExistingProject(projectId) {
 
     showModal();
 }
-export { showModal, openModalForNewProj, openModalForExistingProject, saveAndUpdateModalData };
+
+function setPriorityStyle(rowElement, priority) {
+    if (!rowElement) return;
+
+    // remove existing priority class styles
+    rowElement.classList.remove("priorityNo", "priorityLow", "priorityMedium", "priorityHigh");
+
+    if (priority === 1) {
+        rowElement.classList.add('priorityLow');
+    } else if (priority === 2) {
+        rowElement.classList.add('priorityMedium');
+    } else if (priority === 3) {
+        rowElement.classList.add('priorityHigh');
+    } else {
+        rowElement.classList.add('priorityNo'); // commented style out
+    }
+}
+
+export { showModal, openModalForNewProj, openModalForExistingProject, saveAndUpdateModalData, setPriorityStyle };
