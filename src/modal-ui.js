@@ -125,8 +125,16 @@ function initializeExistingPrioritySelector(selectorElement, initialPriority = 0
         if (targetElement && targetElement.classList.contains("priorityCircle")) {
             // takes the priority value and updates the visual state
             // (fills the appropriate number of circles)
-            const newPriority = parseInt(targetElement.dataset.priorityValue, 10);
+            const originalPriority = parseInt(selectorElement.dataset.currentPriority || initialPriority, 10) || 0;
+            const clickedPriority = parseInt(targetElement.dataset.priorityValue, 10);
+
+            console.log(`originalPriority is ${originalPriority}`);
+            // If the same priority circle is clicked, resets priority to 0
+            // if not, set to the clickedPriority value
+            const newPriority = (clickedPriority === originalPriority) ? 0 : clickedPriority;
+
             updateVisualState(newPriority); // Update the visual state to reflect proper level
+            selectorElement.dataset.currentPriority = newPriority; // store current priority state on the priority container
 
             if (typeof onChangeCallback === "function") {
                 onChangeCallback(newPriority); // Notify about changes made
@@ -157,6 +165,7 @@ function initializeExistingPrioritySelector(selectorElement, initialPriority = 0
     // interacting with the element (data changes observed)
     selectorElement.updateDisplay = (newPriority) => {
         updateVisualState(newPriority);
+        selectorElement.dataset.currentPriority = initialPriority; // set initial priority for priority container (for comparison on toggle)
     };
 }
 
