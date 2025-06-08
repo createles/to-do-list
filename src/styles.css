@@ -137,6 +137,12 @@ body {
     pointer-events: auto;
 }
 
+.toggleCompletedBtn {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+}
+
 .completed {
     text-decoration: line-through;
     color: #777;
