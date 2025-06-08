@@ -1,17 +1,18 @@
-import { showModal, openModalForNewProj, openModalForExistingProject } from "./modal-ui";
+import { showModal, openModalForNewProj, openModalForExistingProject, setPriorityStyle } from "./modal-ui";
 import { getAllProjects, removeProject, selectProjectById, updateProject } from "./project-data";
 
 const addButtonHome = document.querySelector(".addButtonHome");
 
 function loadApp() {
     renderAllProjectCards(); 
+    populateQuickCards();
 }
 
 // creates generic button to add more projects
 function createAddButton() {
     const addButton = document.createElement("button");
     addButton.classList.add("addButton");
-    addButton.textContent = "+";
+    addButton.innerHTML = "New To-Do<br><br>+"
     addButton.addEventListener("click", openModalForNewProj);
     return addButton;
 }
@@ -106,6 +107,9 @@ function renderProjectCard(projItem) {
                 event.stopPropagation();
             })
 
+            // set priority background styling
+            setPriorityStyle(projCardTaskRow, task.priority);
+
             const checkBox = document.createElement("input")
             checkBox.type = "checkbox";
             checkBox.classList.add("projectCardCheckbox");
@@ -192,7 +196,7 @@ function renderProjectCard(projItem) {
 
         const setToggleState = () => {
             const isVisible = projItem.isCompletedVisible;
-            completedTasksContainer.style.display = isVisible ? "block" : "none";
+            completedTasksContainer.style.display = isVisible ? "flex" : "none";
             showCompletedButton.textContent = isVisible ? "Hide Completed" : "Show Completed";
         }
 
@@ -326,6 +330,9 @@ function createQuickRowElement(taskObject, projectId) {
     taskLabel.append(taskTextElement);
 
     quickTaskRow.append(checkBox, taskLabel);
+
+    // set priority background styling
+    setPriorityStyle(quickTaskRow, taskObject.priority);
     return quickTaskRow;
 }
 
@@ -351,24 +358,28 @@ function populateQuickCards() {
     const allProjects = getAllProjects();
 
     // set the format of today's date
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
+    const todayDateObj = new Date();
+    todayDateObj.setHours(0, 0, 0, 0); // Normalize to the start of the day
 
-    const todayFormatted = `${year}-${month}-${day}`; // returns today's date in YYYY-MM-DD format
+    const todayYear = todayDateObj.getFullYear();
+    const todayMonth = String(todayDateObj.getMonth() + 1).padStart(2, "0");
+    const todayDay = String(todayDateObj.getDate()).padStart(2, "0");
+    const todayFormatted = `${todayYear}-${todayMonth}-${todayDay}`;
 
-    const tomorrow = new Date();
-    tomorrow.setDate(today.getDate() + 1);
-    const tomorrowDay = String(tomorrow.getDate()).padStart(2, "0");
+    const tomorrowDateObj = new Date(todayDateObj); // Start with today
+    tomorrowDateObj.setDate(todayDateObj.getDate() + 1); // Set to tomorrow (this handles month/year rollovers)
+    const tomorrowYear = tomorrowDateObj.getFullYear();
+    const tomorrowMonth = String(tomorrowDateObj.getMonth() + 1).padStart(2, "0");
+    const tomorrowDayOfMonth = String(tomorrowDateObj.getDate()).padStart(2, "0");
+    const tomorrowFormatted = `${tomorrowYear}-${tomorrowMonth}-${tomorrowDayOfMonth}`;
 
-    const tomorrowFormatted = `${year}-${month}-${tomorrowDay}`;
+    const dayAfterTomorrowDateObj = new Date(todayDateObj); // Start with today
+    dayAfterTomorrowDateObj.setDate(todayDateObj.getDate() + 2);
+    const dayAfterTomorrowYear = dayAfterTomorrowDateObj.getFullYear();
+    const dayAfterTomorrowMonth = String(dayAfterTomorrowDateObj.getMonth() + 1).padStart(2, "0");
+    const dayAfterTomorrowDayOfMonth = String(dayAfterTomorrowDateObj.getDate()).padStart(2, "0");
+    const afterTomorrowFormatted = `${dayAfterTomorrowYear}-${dayAfterTomorrowMonth}-${dayAfterTomorrowDayOfMonth}`;
 
-    const afterTomorrow = new Date();
-    afterTomorrow.setDate(today.getDate() + 2);
-    const afterTomorrowDay = String(afterTomorrow.getDate()).padStart(2, "0");
-
-    const afterTomorrowFormatted = `${year}-${month}-${afterTomorrowDay}`;
 
     if (allProjects && allProjects.length > 0) {
         allProjects.forEach(projItem => {
@@ -407,16 +418,34 @@ function populateQuickCards() {
             });
         });
 
-        // appends the taskRows AFTER looping through all tasks
-        // adds incompleted tasks first, then completed tasks
-        todaysTasks.appendChild(incompleteTodaysTasks);
-        todaysTasks.appendChild(completedTodaysTasks);
-        overdueTasks.appendChild(incompleteOverdueTasks);
-        overdueTasks.appendChild(completedOverdueTasks);
-        upcomingTasks.appendChild(incompleteUpcomingTasks);
-        upcomingTasks.appendChild(completedUpcomingTasks);
+        // handles empty quick panes
+        if (incompleteTodaysTasks.firstChild === null && completedTodaysTasks.firstChild === null) {
+            todaysTasks.innerHTML = '<p class="emptyPaneMessage">No tasks due today.</p>';
+        } else {
+            todaysTasks.appendChild(incompleteTodaysTasks);
+            todaysTasks.appendChild(completedTodaysTasks);
+        }
+
+        if (incompleteOverdueTasks.firstChild === null && completedOverdueTasks.firstChild === null) {
+            overdueTasks.innerHTML = '<p class="emptyPaneMessage">No overdue tasks. Great job!</p>';
+        } else {
+            overdueTasks.appendChild(incompleteOverdueTasks);
+            overdueTasks.appendChild(completedOverdueTasks);
+        }
+
+        if (incompleteUpcomingTasks.firstChild === null && completedUpcomingTasks.firstChild === null) {
+            upcomingTasks.innerHTML = '<p class="emptyPaneMessage">No upcoming tasks for the next two days.</p>';
+        } else {
+            upcomingTasks.appendChild(incompleteUpcomingTasks);
+            upcomingTasks.appendChild(completedUpcomingTasks);
+        }
+    } else {
+        // Handle case where there are no projects at all
+        todaysTasks.innerHTML = '<p class="emptyPaneMessage">No tasks due today.</p>';
+        overdueTasks.innerHTML = '<p class="emptyPaneMessage">No overdue tasks.</p>';
+        upcomingTasks.innerHTML = '<p class="emptyPaneMessage">No upcoming tasks.</p>';
     }
 
-    // CONTINUE: FINE TUNE QUICK PANE BEHAVIOR eg. whether to add cards to quick panes if they are already marked complete 
+    // CONTINUE: refine behavior of quick panes (css too)
 }
 export {loadApp, renderProjectCard, renderAllProjectCards, populateQuickCards}
