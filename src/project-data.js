@@ -31,8 +31,8 @@ function loadProjects() {
                         };
                     }
                 });
-
-                return { ...project, tasks: normalizedTasks };
+                // ensures isCompletedVisible exists and if not, defaults to false
+                return { ...project, tasks: normalizedTasks, isCompletedVisible: project.isCompletedVisible || false };
             });
 
             console.log("Projects after normalization:", projects);
@@ -66,7 +66,8 @@ function newProject(title = "New Project") { // set default value for title if m
     const newProject = {
         id: currentProjId++, // post increment operator; set id to current value, then increment the variable in one move
         title: title,
-        tasks: []
+        tasks: [],
+        isCompletedVisible: false // handles visibility when toggling show/hide completed
     };
 
     projects.push(newProject);
