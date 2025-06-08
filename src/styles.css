@@ -7,7 +7,7 @@
 body {
     width: 100svw;
     height: 100svh;
-    background-color: orange;
+    background-color: #F8F9FA;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -18,10 +18,14 @@ body {
 .taskView {
     width: 90%;
     height: 40%;
-    border: 1px solid black;
     display: flex;
-    background-color: #33333386;
+    background-color: hsl(0, 0%, 100%);
     padding: 10px;
+    gap: 5px;
+    color: rgb(0, 0, 0);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+    overflow: hidden;
 }
 
 .viewLeft, .viewRight {
@@ -30,16 +34,11 @@ body {
     flex-direction: column;
 }
 
-/* .viewLeft {
-
-} */
-
 .todaysTasks, .upcomingTasks, .overdueTasks {
-    width: 90%;
+    width: 100%;
     height: 80%;
-    align-self: center;
     overflow-y: scroll;
-    padding: 5px;
+    padding: 5px 10px 5px 0px;
 }
 
 .todaysTasks .quickTaskRow {
@@ -50,10 +49,14 @@ body {
     width: 1rem;
 }
 
+.viewLeft {
+    border-right: 2px solid black;
+}
 
 .viewRight {
     display: flex;
     flex-direction: column;
+    padding-left: 2px;
 }
 
 .upcoming, .overdue {
@@ -76,11 +79,11 @@ body {
 #projectFolder {
     width: 90%;
     height: 50%;
-    border: 1px solid black;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     overflow-y: scroll;
+    padding: 8px 0px 8px 8px;
 }
 
 .addButtonHome {
@@ -101,6 +104,10 @@ body {
 .addButton {
     width: auto;
     height: 200px;
+    color: rgba(0, 0, 0, 0.445);
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
 }
 
 #centerButton {
@@ -116,12 +123,25 @@ body {
     background-color: white;
     position: relative;
     padding: 5px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+    padding: 8px;
+    overflow: hidden;
 }
 
 .projectCardTaskList {
-    height: 80%;
+    height: 75%;
     overflow-y: scroll;
-    padding: 0 5px 0 5px;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.projectCardCompletedTasks {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
 .projectCardTaskRow {
@@ -186,10 +206,54 @@ body {
     height: 80%;
     background-color: white;
     position: relative;
+    border-radius: 12px;
+    padding: 20px 10px;
+}
+
+.taskArea {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .taskInputRow {
     display: flex;
+}
+
+.taskTextInputNew, .taskTextInputExisting {
+    background: none;
+    width: 60%;
+}
+
+.taskDueDateInput, .taskDueDateInputExisting {
+    background: none;
+    text-align: center;
+}
+
+.taskInputRow, .projectCardTaskRow, .quickTaskRow {
+    transition: background-color 0.3s ease; /* smooth transition */
+    border-left: 4px solid #00000000;
+    padding-left: 2px;
+}
+
+/* .priorityNo {
+ background-color: rgba(0, 0, 0, 0.041);
+ border-left: 4px solid #00000036;
+} */
+
+.priorityLow {
+  background-color: #e0f2fe; 
+  border-left: 4px solid #3b82f6; 
+}
+
+.priorityMedium { 
+  background-color: #fef3c7; 
+  border-left: 4px solid #f59e0b;
+}
+
+.priorityHigh { 
+  background-color: #fee2e2; 
+  border-left: 4px solid #ef4444;
 }
 
 .prioritySelector {
@@ -219,11 +283,6 @@ body {
     background-color: #555; 
     border-color: #555;
 }
-
-/* Example: Different colors for different priority fills */
-/* .priority-circle.is-filled[data-priority-value="1"] { background-color: green; border-color: green; } */
-/* .priority-circle.is-filled[data-priority-value="2"] { background-color: orange; border-color: orange; } */
-/* .priority-circle.is-filled[data-priority-value="3"] { background-color: red; border-color: red; } */
 
 .isVisible {
     display: flex;
