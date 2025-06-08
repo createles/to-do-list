@@ -90,6 +90,8 @@ function renderProjectCard(projItem) {
     completedTasksContainer.className = "projectCardCompletedTasks"
     completedTasksContainer.style.display = "none"; // initially hides the completed tasks
 
+    let hasCompletedTasks = false; // checks if a project card has completed tasks in it
+
     // CONTINUE: FIGURE OUT TO HAVE PERSISTENT COMPLETED STATES
 
     // if tasks exist, create task items
@@ -161,6 +163,7 @@ function renderProjectCard(projItem) {
             // Handle ordering the tasks based on completion
             if (task.completed) {
                 completedTasksFragment.appendChild(projCardTaskRow);
+                hasCompletedTasks = true; // indicates that project card has at least one completed
             } else {
                 incompleteTasksFragment.appendChild(projCardTaskRow);
             }
@@ -171,8 +174,8 @@ function renderProjectCard(projItem) {
         // adds incompleted tasks first, then the completed tasks wrapper div
         taskList.appendChild(incompleteTasksFragment);
 
-        completedTasksContainer.appendChild(completedTasksFragment);
-        taskList.appendChild(completedTasksContainer);
+        // completedTasksContainer.appendChild(completedTasksFragment);
+        // taskList.appendChild(completedTasksContainer);
 
     } else { // If no tasks are found, display message
         const noTasksMessage = document.createElement("p");
@@ -181,15 +184,37 @@ function renderProjectCard(projItem) {
         taskList.append(noTasksMessage);
     }
 
-    // create show/hide button for completed tasks
-    const showCompletedButton = document.createElement("button");
-    showCompletedButton.textContent = "Show Completed";
-    showCompletedButton.addEventListener("click", (event) => {
-        event.stopPropagation(); // Prevent click from bubbling up to projectCard
-        const isHidden = completedTasksContainer.style.display === "none"; 
-        completedTasksContainer.style.display = isHidden ? "block" : "none";
-        showCompletedButton.textContent = isHidden ? "Hide Completed" : "Show Completed";
-    });
+    if (hasCompletedTasks) {
+        // create show/hide button for completed tasks
+        const showCompletedButton = document.createElement("button");
+        showCompletedButton.className = "toggleCompletedBtn";
+        showCompletedButton.textContent = "Show Completed";
+
+        const setToggleState = () => {
+            const isVisible = projItem.isCompletedVisible;
+            completedTasksContainer.style.display = isVisible ? "block" : "none";
+            showCompletedButton.textContent = isVisible ? "Hide Completed" : "Show Completed";
+        }
+
+        showCompletedButton.addEventListener("click", (event) => {
+            event.stopPropagation(); // Prevent click from bubbling up to projectCard
+
+            // Toggles visibility state on object data
+            projItem.isCompletedVisible = !projItem.isCompletedVisible;
+
+            // need to update persistent completed visual state on the actual object data
+            updateProject(projId, { isCompletedVisible: projItem.isCompletedVisible });
+            console.log(`Toggled 'isCompletedVisible' to ${projItem.isCompletedVisible} for project ${projId} and saved.`);
+            // Handles making visible/hidden
+            setToggleState();
+        });
+
+        completedTasksContainer.appendChild(completedTasksFragment);
+        projectCard.appendChild(showCompletedButton);
+        taskList.appendChild(completedTasksContainer);
+
+        setToggleState();
+    }
 
     // create trash button
     const trashButton = document.createElement("button");
@@ -217,7 +242,7 @@ function renderProjectCard(projItem) {
         openModalForExistingProject(projId);
     });
 
-    projectCard.append(cardTitle, taskList, showCompletedButton, trashButton);
+    projectCard.append(cardTitle, taskList, trashButton);
     projFolder.append(projectCard);
 }
 
