@@ -93,8 +93,6 @@ function renderProjectCard(projItem) {
 
     let hasCompletedTasks = false; // checks if a project card has completed tasks in it
 
-    // CONTINUE: FIGURE OUT TO HAVE PERSISTENT COMPLETED STATES
-
     // if tasks exist, create task items
     if (tasks && tasks.length > 0) {
         tasks.forEach((task, index) => {
@@ -167,26 +165,36 @@ function renderProjectCard(projItem) {
             // Handle ordering the tasks based on completion
             if (task.completed) {
                 completedTasksFragment.appendChild(projCardTaskRow);
-                hasCompletedTasks = true; // indicates that project card has at least one completed
+                let hasCompletedTasks = true;
             } else {
                 incompleteTasksFragment.appendChild(projCardTaskRow);
             }
 
         });
 
+        // store the status of the fragments
+        const hasIncompleteTasks = incompleteTasksFragment.hasChildNodes(); // .hasChildNodes() is fine for fragments
+        hasCompletedTasks = completedTasksFragment.hasChildNodes();
+
         // appends the taskRows AFTER looping through all tasks
         // adds incompleted tasks first, then the completed tasks wrapper div
         taskList.appendChild(incompleteTasksFragment);
 
-        // completedTasksContainer.appendChild(completedTasksFragment);
-        // taskList.appendChild(completedTasksContainer);
+        if (!hasIncompleteTasks && hasCompletedTasks) {
+            const noTasksMessage = document.createElement("p");
+            noTasksMessage.className = "noTasksMessage";
+            noTasksMessage.textContent = "No pending tasks available.";
+            taskList.appendChild(noTasksMessage);
+        }
 
     } else { // If no tasks are found, display message
         const noTasksMessage = document.createElement("p");
         noTasksMessage.classList.add("noTasksMessage");
-        noTasksMessage.textContent = "No current tasks available."
+        noTasksMessage.textContent = "No pending tasks available."
         taskList.append(noTasksMessage);
     }
+
+    // FIX: No pending tasks avaialable SHOULD ONLY BE visible when isVisible is set to false
 
     if (hasCompletedTasks) {
         // create show/hide button for completed tasks
@@ -446,6 +454,5 @@ function populateQuickCards() {
         upcomingTasks.innerHTML = '<p class="emptyPaneMessage">No upcoming tasks.</p>';
     }
 
-    // CONTINUE: refine behavior of quick panes (css too)
 }
 export {loadApp, renderProjectCard, renderAllProjectCards, populateQuickCards}
