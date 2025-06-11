@@ -189,147 +189,120 @@ function addTaskInputRow(containerElement) {
     `;
 
     // inserts a new task row set into the modal task area
-    containerElement.insertAdjacentHTML('beforeend', taskRowHtml);
+    containerElement.insertAdjacentHTML('afterbegin', taskRowHtml);
 
     // selects the newly created task row 
-    const newRowElement = containerElement.querySelector(".taskInputRow:last-child");
-    const textInput = newRowElement.querySelector(".taskTextInputNew");
-    
-    if (newRowElement) {
-        // if textInput is clicked and no value is detected on blur, delete the task row
-        if (textInput) {
-            textInput.addEventListener("focusin", () => {
-                    textInput.dataset.originalValue = textInput.value; // saves the original value of the task text
-            });
+    const newRowElement = containerElement.querySelector(".taskInputRow:first-child");
 
-            textInput.addEventListener("blur", () => {
-                const currentValue = textInput.value.trim();
-                const oldValue = textInput.dataset.oldValue || "";
+    // selects priority circles container for the task
+    const prioritySelectorElement = newRowElement.querySelector(".prioritySelector");
+    if (prioritySelectorElement) {
+        // set event listeners and initial priority state for the entire task row
+        initializeExistingPrioritySelector(prioritySelectorElement, 0, (newPriority) => {
+            console.log(`Priority for a task in a new row was set to: ${newPriority}`);
+            // sets the dataset property of
+            // the ENTIRE ROW (the task item) to have 
+            // selectedPriority
+            newRowElement.dataset.priority = newPriority;
 
-                // compare whether the task text was completely deleted, and whether it originally had any text value
-                if (currentValue === "" && (oldValue !== "" || newRowElement.dataset.taskId)) {
-                    console.log(`Task text for task ${newRowElement.dataset.taskId} was cleared. Removing from tasks list.`)
-                    newRowElement.remove();
-                // if the element is a newly created task but had it's text deleted before blurring, delete the task row
-                } else if (currentValue === "" && (oldValue === "" && newRowElement.nextElementSibling !== null)) {
-                    console.log(`Task text for task ${newRowElement.dataset.taskId} was cleared. Removing from tasks list.`)
-                    newRowElement.remove();
+            setPriorityStyle(newRowElement, newPriority);
+            debouncedSave(); // *IMPT: call debouncedSave here to save the change in priority
+        })
+    }
+
+    // set event listener for checked status
+    const newCheckBox = newRowElement.querySelector(".taskCheckBoxNew");
+    if (newCheckBox) {
+        newCheckBox.addEventListener("change", (event) => {
+            newRowElement.dataset.completed = event.target.checked;
+        });
+    }
+
+    // set event listener for value changes for DATE input
+    const newDueDateInput = newRowElement.querySelector(".taskDueDateInput");
+    if (newDueDateInput) {
+        newDueDateInput.addEventListener("change", (event) => {
+            newRowElement.dataset.dueDate = event.target.value; // date stored in "YYYY-MM-DD" or "" format
+        })
+    }
+
+    // set event listener to delete taskInputRow with delete button
+    // update the project to remove the selected task
+    const deleteButton = newRowElement.querySelector(".taskDelete");
+    if (deleteButton) {
+        deleteButton.addEventListener("click", () => {
+            newRowElement.remove();
+            console.log("Task deleted from UI.");
+
+            // If project has already been created and saved; need to update project
+            if (currentProjIdForModal !== null) {
+
+                if (!containerElement) {
+                    console.log("Could not find task area container to re-collect and update tasks.");
+                    return;
                 }
 
-                debouncedSave();
-                // clears the temporary property value as to not take up memory
-                delete textInput.dataset.oldValue;
-            })
-        }
+                const taskObjects = [];
+                const remainingTaskRowElements = containerElement.querySelectorAll(".taskInputRow");
 
-        // selects priority circles container for the task
-        const prioritySelectorElement = newRowElement.querySelector(".prioritySelector");
-        if (prioritySelectorElement) {
-            // set event listeners and initial priority state for the entire task row
-            initializeExistingPrioritySelector(prioritySelectorElement, 0, (newPriority) => {
-                console.log(`Priority for a task in a new row was set to: ${newPriority}`);
-                // sets the dataset property of
-                // the ENTIRE ROW (the task item) to have 
-                // selectedPriority
-                newRowElement.dataset.priority = newPriority;
-
-                setPriorityStyle(newRowElement, newPriority);
-                debouncedSave(); // *IMPT: call debouncedSave here to save the change in priority
-            })
-        }
-
-        // set event listener for checked status
-        const newCheckBox = newRowElement.querySelector(".taskCheckBoxNew");
-        if (newCheckBox) {
-            newCheckBox.addEventListener("change", (event) => {
-                newRowElement.dataset.completed = event.target.checked;
-            });
-        }
-
-        // set event listener for value changes for DATE input
-        const newDueDateInput = newRowElement.querySelector(".taskDueDateInput");
-        if (newDueDateInput) {
-            newDueDateInput.addEventListener("change", (event) => {
-                newRowElement.dataset.dueDate = event.target.value; // date stored in "YYYY-MM-DD" or "" format
-            })
-        }
-
-        // set event listener to delete taskInputRow with delete button
-        // update the project to remove the selected task
-        const deleteButton = newRowElement.querySelector(".taskDelete");
-        if (deleteButton) {
-            deleteButton.addEventListener("click", () => {
-                newRowElement.remove();
-                console.log("Task deleted from UI.");
-
-                // If project has already been created and saved; need to update project
-                if (currentProjIdForModal !== null) {
-
-                    if (!containerElement) {
-                        console.log("Could not find task area container to re-collect and update tasks.");
-                        return;
-                    }
-
-                    const taskObjects = [];
-                    const remainingTaskRowElements = containerElement.querySelectorAll(".taskInputRow");
-
-                    if (remainingTaskRowElements.length === 0) {
-                        // If no rows are left at all, add a new one
-                        console.log("No task rows left. Adding a new empty task row.");
-                        addTaskInputRow(containerElement);
-                    } else {
-                        // check if empty row exists
-                        const hasAnEmptyInputRow = Array.from(remainingTaskRowElements).some(rowEl => {
-                            // selects the taskTextInput in each row
-                            const textInput = rowEl.querySelector(".taskTextInputNew");
-                            // check if the value of the text input is empty
-                            return textInput && textInput.value.trim() === "";
-                        });
-
-                        if (!hasAnEmptyInputRow) {
-                            // Adds empty task row if all tasks have text values
-                            console.log("All remaining task rows have text. Adding a new empty one.");
-                            addTaskInputRow(containerElement);
-                        } else {
-                            console.log("An empty task input row already exists. Not adding another.");
-                        }
-                    }
-
-                    // Handles re-populating the task objects list with the remaining task elements
-                    remainingTaskRowElements.forEach((rowEl, index) => {
+                if (remainingTaskRowElements.length === 0) {
+                    // If no rows are left at all, add a new one
+                    console.log("No task rows left. Adding a new empty task row.");
+                    addTaskInputRow(containerElement);
+                } else {
+                    // check if empty row exists
+                    const hasAnEmptyInputRow = Array.from(remainingTaskRowElements).some(rowEl => {
+                        // selects the taskTextInput in each row
                         const textInput = rowEl.querySelector(".taskTextInputNew");
-                        const taskText = textInput ? textInput.value.trim() : "";
-
-                        if (taskText) { // Only include tasks that have text
-                            const isCompleted = rowEl.dataset.completed === 'true';
-                            // Ensure you are reading the correct dataset attribute for priority
-                            const priority = parseInt(rowEl.dataset.priority || rowEl.dataset.selectedPriority, 10) || 0;
-                            const dueDateValue = rowEl.dataset.dueDate;
-
-                            taskObjects.push({
-                                // retain taskId for retained tasks
-                                id: rowEl.dataset.taskId || `task_${currentProjIdForModal}_temp_${index}_${Date.now()}`, // Temporary ID if old one isn't set on row
-                                text: taskText,
-                                completed: isCompleted,
-                                priority: priority,
-                                dueDate: dueDateValue || null
-                            });
-                        }
+                        // check if the value of the text input is empty
+                        return textInput && textInput.value.trim() === "";
                     });
 
-                    console.log(`Updating project ${currentProjIdForModal} after task deletion. New task list:`, taskObjects);
-                    // Now call updateProject with the newly formed list of tasks
-                    updateProject(currentProjIdForModal, { tasks: taskObjects });
-                } else {
-                    // If currentProjIdForModal is null, the project hasn't been created yet.
-                    // Simply removing the row from the DOM is enough.
-                    // The main save (handleSaveNewProject) will later collect tasks from remaining rows.
-                    console.log("Task row removed from UI before initial project save. Data will be correct on save.");
+                    if (!hasAnEmptyInputRow) {
+                        // Adds empty task row if all tasks have text values
+                        console.log("All remaining task rows have text. Adding a new empty one.");
+                        addTaskInputRow(containerElement);
+                    } else {
+                        console.log("An empty task input row already exists. Not adding another.");
+                    }
                 }
-            });
-        }
+
+                // Handles re-populating the task objects list with the remaining task elements
+                remainingTaskRowElements.forEach((rowEl, index) => {
+                    const textInput = rowEl.querySelector(".taskTextInputNew");
+                    const taskText = textInput ? textInput.value.trim() : "";
+
+                    if (taskText) { // Only include tasks that have text
+                        const isCompleted = rowEl.dataset.completed === 'true';
+                        // Ensure you are reading the correct dataset attribute for priority
+                        const priority = parseInt(rowEl.dataset.priority || rowEl.dataset.selectedPriority, 10) || 0;
+                        const dueDateValue = rowEl.dataset.dueDate;
+
+                        taskObjects.push({
+                            // retain taskId for retained tasks
+                            id: rowEl.dataset.taskId || `task_${currentProjIdForModal}_temp_${index}_${Date.now()}`, // Temporary ID if old one isn't set on row
+                            text: taskText,
+                            completed: isCompleted,
+                            priority: priority,
+                            dueDate: dueDateValue || null
+                        });
+                    }
+                });
+
+                console.log(`Updating project ${currentProjIdForModal} after task deletion. New task list:`, taskObjects);
+                // Now call updateProject with the newly formed list of tasks
+                updateProject(currentProjIdForModal, { tasks: taskObjects });
+            } else {
+                // If currentProjIdForModal is null, the project hasn't been created yet.
+                // Simply removing the row from the DOM is enough.
+                // The main save (handleSaveNewProject) will later collect tasks from remaining rows.
+                console.log("Task row removed from UI before initial project save. Data will be correct on save.");
+            }
+        });
     }
+    return newRowElement;
 }
+
 
 // Handles general save mechanics
 function saveAndUpdateModalData() {
@@ -462,7 +435,6 @@ function saveAndUpdateModalData() {
 const debouncedSave = debounce(saveAndUpdateModalData, 300);
 
 
-
 // reorders the tasks in the modal task area based on completion status
 // completed tasks are pushed to the bottom while incomplete tasks are on top
 function reorderTasksInModal(taskAreaElement) {
@@ -507,7 +479,11 @@ if (modalContentArea) {
     modalContentArea.addEventListener('focusin', (event) => {
         const target = event.target;
         if (target.matches('.titleInput, .taskTextInputNew, .taskTextInputExisting, .taskDueDateInput, .taskDueDateInputExisting')) {
-            target.dataset.originalValue = target.value; // stores the current value before editing when focused
+            if (target.value.trim() !== "") {
+                target.dataset.originalValue = target.value; // stores the current value before editing when focused
+            } else {
+                target.dataset.originalValue = "NEW_EMPTY_TASK"
+            }
             console.log(`FOCUSIN on [${target.className || target.id}]: Stored originalValue = "${target.dataset.originalValue}"`);
         }
     });
@@ -516,18 +492,24 @@ if (modalContentArea) {
     modalContentArea.addEventListener('focusout', (event) => {
         const target = event.target;
         if (target.matches('.titleInput, .taskTextInputNew, .taskTextInputExisting, .taskDueDateInput, .taskDueDateInputExisting')) {
-            const currentValue = target.value; // gets current value
+            const taskRow = target.closest(".taskInputRow");
+            const currentValue = target.value.trim(); // gets current value
             const originalValue = target.dataset.originalValue;
 
-            // ADD LOGS HERE TO SEE WHAT'S BEING COMPARED
-            console.log(`FOCUSOUT on [${target.className || target.id}]:`);
-            console.log(`  Current Value: "${currentValue}" (type: ${typeof currentValue})`);
-            console.log(`  Original Value from dataset: "${originalValue}" (type: ${typeof originalValue})`);
+            const isNewAndStillEmpty = (originalValue === "NEW_EMPTY_TASK" && currentValue === "");
 
+            if (isNewAndStillEmpty && taskRow && !taskRow.dataset.taskId) {
+                // blurred a new task row that had no text
+                console.log("New task input blurred while still empty. No save triggered.")
+                return;
             // check for changes by comparing original vs current value
-            if (typeof target.dataset.originalValue !== 'undefined' && target.value !== target.dataset.originalValue) {
-                console.log(`Value changed for ${target.className || target.id}. New: "${target.value}", Old: "${target.dataset.originalValue}". Triggering save.`);
+            } else if (typeof originalValue !== 'undefined' && currentValue !== originalValue && currentValue !== "") {
+                console.log(`Value changed for ${target.className || target.id}. New: "${target.value}", Old: "${originalValue}". Triggering save.`);
                 debouncedSave(); // call debounced save function
+            } else if (typeof originalValue !== "undefined" && currentValue !== originalValue && currentValue === "" && originalValue !== "NEW_EMPTY_TASK") {
+                console.log("Value for task row was deleted and blurred. Task row deleted and save triggered.")
+                taskRow.remove();
+                debouncedSave();
             } else {
                 if (typeof originalValue === 'undefined') {
                     console.log("  DECISION: No changes observed (originalValue was undefined). No save triggered.");
@@ -650,12 +632,12 @@ function openModalForNewProj() {
 
     // Handles new input row creation on successful task input confirmation
     if (taskAreaContainer) {
-        taskAreaContainer.addEventListener('input', (event) => {
+        taskAreaContainer.addEventListener('focusout', (event) => {
             // check if an event fired from a task text input and if it is the last one in the container
             if (event.target.classList.contains("taskTextInputNew")) {
                 const currentRow = event.target.closest(".taskInputRow");
                 // check if currentRow is the last input row
-                if (currentRow && currentRow === taskAreaContainer.querySelector(".taskInputRow:last-child")) {
+                if (currentRow && currentRow === taskAreaContainer.querySelector(".taskInputRow:first-child")) {
                     // if user input a value into the last input, create a new input row
                     if (event.target.value.trim() !== "") {
                         addTaskInputRow(taskAreaContainer);
@@ -665,27 +647,11 @@ function openModalForNewProj() {
         });
 
         taskAreaContainer.addEventListener("keydown", (event) => {
-            if (event.target.classList.contains("taskTextInputNew") && event.key === "Enter") {
+            if (event.target.classList.contains("taskTextInputNew") && event.key === "Enter" && event.target.value !== "") {
                 event.preventDefault();
-                const currentRow = event.target.closest(".taskInputRow");
-                // Add new row if last row OR if next row's input is empty
-                const nextRow = currentRow ? currentRow.nextElementSibling : null;
-                // is evaluated as true or false; if nextRow exists, then isLastRow is false, if it doesnt, isLastRow is true
-                const isLastRow = !nextRow;
-
-                if (isLastRow) {
-                    // if the last row has a value in the input field, create a new row
-                    if (currentRow.value) {
-                        addTaskInputRow(taskAreaContainer);
-                        // Focus on the new Input added
-                        const newInput = taskAreaContainer.querySelector(".taskInputRow:last-child .taskTextInputNew");
-                        if (newInput) requestAnimationFrame(() => newInput.focus());
-                    }
-                } else if (nextRow) {
-                    // Focus the next existing input if it's not empty
-                    const nextInput = nextRow.querySelector(".taskTextInputNew");
-                    if (nextInput) requestAnimationFrame(() => nextInput.focus());
-                }
+                const newRow = addTaskInputRow(taskAreaContainer);
+                const newRowInput = newRow.querySelector(".taskTextInputNew");
+                requestAnimationFrame(() => newRowInput.focus());
             }
         });
     }
