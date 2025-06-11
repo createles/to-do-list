@@ -195,8 +195,11 @@ body {
     position: absolute;
     right: 20px;
     bottom: 10px;
-    background-color: rgba(255, 0, 0, 0.548);
+    background-color: rgb(253, 166, 166);
+    border-radius: 10px;
+    padding: 0;
     display: flex;
+    color: red;
 }
 
 .modal {
@@ -223,8 +226,6 @@ body {
 }
 
 .modalContainer {
-    display: grid;
-    grid-template: 1fr 8fr / 1fr;
     width: 80%;
     height: 80%;
     background-color: white;
@@ -233,10 +234,17 @@ body {
     padding: 20px 10px;
 }
 
+.modalContentArea {
+    width: 100%;
+    height: 100%;
+}
+
 .taskArea {
+    height: 90%;
     display: flex;
     flex-direction: column;
     gap: 2px;
+    overflow-y: scroll;
 }
 
 .taskInputRow {
@@ -335,6 +343,14 @@ body {
 .exitButton:hover {
     color: #000;
     background-color: rgba(128, 128, 128, 0.70);
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 200,
+  'GRAD' 0,
+  'opsz' 24
 }
 
 *::-webkit-scrollbar {
