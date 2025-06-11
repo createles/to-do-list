@@ -196,17 +196,21 @@ function renderProjectCard(projItem) {
 
     // FIX: No pending tasks avaialable SHOULD ONLY BE visible when isVisible is set to false
 
-    if (hasCompletedTasks) {
-        // create show/hide button for completed tasks
-        const showCompletedButton = document.createElement("button");
-        showCompletedButton.className = "toggleCompletedBtn";
-        showCompletedButton.textContent = "Show Completed";
+        if (hasCompletedTasks) {
+            // create show/hide button for completed tasks
+            const showCompletedButton = document.createElement("button");
+            showCompletedButton.className = "toggleCompletedBtn";
+            showCompletedButton.textContent = "Show Completed";
+            const noTasksMessage = taskList.querySelector(".noTasksMessage");
 
-        const setToggleState = () => {
-            const isVisible = projItem.isCompletedVisible;
-            completedTasksContainer.style.display = isVisible ? "flex" : "none";
-            showCompletedButton.textContent = isVisible ? "Hide Completed" : "Show Completed";
-        }
+            const setToggleState = () => {
+                const isVisible = projItem.isCompletedVisible;
+                completedTasksContainer.style.display = isVisible ? "flex" : "none";
+                showCompletedButton.textContent = isVisible ? "Hide Completed" : "Show Completed";
+                if (noTasksMessage) {
+                    noTasksMessage.style.display = isVisible ? "none" : "block";
+                }
+            }
 
         showCompletedButton.addEventListener("click", (event) => {
             event.stopPropagation(); // Prevent click from bubbling up to projectCard
@@ -231,7 +235,8 @@ function renderProjectCard(projItem) {
     // create trash button
     const trashButton = document.createElement("button");
     trashButton.classList.add("trashButton");
-    trashButton.innerHTML = "&#128465;";
+    const trashButtonIcon = `<span class="material-symbols-outlined">delete</span>`;
+    trashButton.innerHTML = trashButtonIcon;
 
     // add event listener to delete project card on click
     trashButton.addEventListener("click", (event) => {
