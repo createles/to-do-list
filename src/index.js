@@ -1,5 +1,4 @@
 import "./styles.css";
-import { newProject, selectProjectById, removeProject } from "./project-data";
-import { loadApp, renderProjectCard } from "./project-template";
+import { loadApp } from "./project-template";
 
 loadApp();

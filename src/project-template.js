@@ -1,9 +1,10 @@
 import { showModal, openModalForNewProj, openModalForExistingProject, setPriorityStyle } from "./modal-ui";
-import { getAllProjects, removeProject, selectProjectById, updateProject } from "./project-data";
+import { getAllProjects, loadProjects, removeProject, selectProjectById, updateProject } from "./project-data";
 
 const addButtonHome = document.querySelector(".addButtonHome");
 
 function loadApp() {
+    loadProjects();
     renderAllProjectCards(); 
     populateQuickCards();
 }
