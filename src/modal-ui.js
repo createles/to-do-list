@@ -647,11 +647,17 @@ function openModalForNewProj() {
         });
 
         taskAreaContainer.addEventListener("keydown", (event) => {
-            if (event.target.classList.contains("taskTextInputNew") && event.key === "Enter" && event.target.value !== "") {
+            if (event.target.classList.contains("taskTextInputNew") && event.key === "Enter" && event.target.value.trim() !== "") {
                 event.preventDefault();
-                const newRow = addTaskInputRow(taskAreaContainer);
-                const newRowInput = newRow.querySelector(".taskTextInputNew");
-                requestAnimationFrame(() => newRowInput.focus());
+                const currentRow = event.target.closest(".taskInputRow");
+
+                if (currentRow && currentRow === taskAreaContainer.firstElementChild) {
+                    const newRow = addTaskInputRow(taskAreaContainer);
+                    const newRowInput = newRow.querySelector(".taskTextInputNew");
+                    requestAnimationFrame(() => newRowInput.focus());
+                } else {
+                    event.target.blur();
+                }
             }
         });
     }
