@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=delete" />
+<script defer src="main.js"></script></head>
+<body>
+    <div class="taskView">
+        <div class="viewLeft">
+            <h1>Today</h1>
+            <div class="todaysTasks"></div>
+        </div>
+        <div class="viewRight">
+            <div class="upcoming">
+                <h3>Upcoming</h3>
+                <div class="upcomingTasks"></div>
+            </div>
+            <div class="overdue">
+                <h3>Overdue</h3>
+                <div class="overdueTasks"></div>
+            </div>
+        </div>
+    </div>
+    <button class="addButtonHome isVisible">+</button>
+    <div class="modal">
+        <div class="modalBackground"></div>
+        <div class="modalContainer">
+            <button class="exitButton">X</button>
+            <div class="modalContentArea">
+                <input type="text" class="titleInput" placeholder="Title">
+                <div class="taskArea">
+                    <h4>To-Do:</h4>
+                    <div class="taskInputRow">
+                        <input type="checkbox" class="taskCheckBoxNew" aria-label="Mark task complete">
+                        <input type="text" class="taskTextInputNew" placeholder="add task...">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="projectFolder"></div>
+    <div class="footer">
+        <div class="wrap">
+            <div class="circleLegend lowPrio"></div>
+            <p class="legendText">low priority</p>
+        </div>
+        <div class="wrap">
+            <div class="circleLegend medPrio"></div>
+            <p class="legendText">medium priority</p>
+        </div>
+        <div class="wrap">
+            <div class="circleLegend highPrio"></div>
+            <p class="legendText">high priority</p>
+        </div>
+    </div>
+</body>
+</html>
